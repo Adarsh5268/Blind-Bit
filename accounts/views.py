@@ -231,9 +231,9 @@ def register_view(request):
             'public_key', 'encrypted_private_key', 'private_key_iv', 'private_key_tag'
         ])
 
-        request.session['_2fa_verified'] = True
-        request.session['is_2fa_verified'] = True
-        return redirect('dashboard')
+        request.session['_2fa_verified'] = False
+        request.session['is_2fa_verified'] = False
+        return redirect('setup_2fa')
 
     return render(request, 'accounts/register.html', _auth_context())
 

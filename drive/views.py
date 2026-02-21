@@ -110,6 +110,10 @@ def _run_decoy_lookups(user):
 def dashboard(request):
     profile = UserProfile.objects.get_or_create(user=request.user)[0]
 
+    # Enforce 2FA setup for new users
+    if not profile.is_2fa_enabled:
+        return redirect('setup_2fa')
+
     file_count = EncryptedFile.objects.filter(owner=request.user).count()
     record_count = EncryptedRecord.objects.filter(owner=request.user).count()
     k_tokens = FileIndex.objects.filter(file__owner=request.user, token_type='K').count()
