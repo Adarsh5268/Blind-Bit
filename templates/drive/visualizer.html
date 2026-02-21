@@ -14,11 +14,6 @@
         <button type="button" class="btn btn-primary" id="guided-tour-btn">Start Guided Tour</button>
         <button type="button" class="btn btn-ghost" id="reset-progress-btn">Reset Progress</button>
     </div>
-    <div class="hero-score">
-        <div class="score-label">Score</div>
-        <div class="score-value" id="mission-score">0</div>
-        <div class="score-rank" id="mission-rank">New Analyst</div>
-    </div>
 </div>
 
 
@@ -65,12 +60,13 @@
                 <button type="button" onclick="loadSample('financial')">Financial</button>
                 <button type="button" onclick="loadSample('personal')">Personal</button>
             </div>
-            <button class="btn btn-primary btn-full" onclick="runVisualize()" id="viz-btn">Encrypt and Tokenize</button>
+            <button class="btn btn-primary btn-full" onclick="runVisualize()" id="viz-btn"
+                style="margin-top: 16px">Encrypt and Tokenize</button>
             <p id="viz-status" class="viz-inline-status" style="display:none"></p>
         </div>
     </div>
 
-    <div class="proc-arrow">v</div>
+    <div class="proc-arrow" id="arrow-1" style="display:none">&#8595;</div>
 
     <div class="viz-step reveal" id="step-keys" style="display:none">
         <div class="step-header">
@@ -89,7 +85,7 @@
         </div>
     </div>
 
-    <div class="proc-arrow">v</div>
+    <div class="proc-arrow" id="arrow-2" style="display:none">&#8595;</div>
 
     <div class="viz-split reveal" id="step-process" style="display:none">
         <div class="viz-col">
@@ -120,47 +116,47 @@
             <div class="card viz-card">
                 <div class="token-list" id="out-tokens"></div>
             </div>
-
-            <div class="search-sim-box">
-                <h4>Search Simulator Arena</h4>
-                <p class="sim-help">Run queries and inspect exactly why a token matched.</p>
-                <div class="sim-mode-row">
-                    <button type="button" class="sim-mode active" data-mode="exact">Exact</button>
-                    <button type="button" class="sim-mode" data-mode="prefix">Prefix</button>
-                    <button type="button" class="sim-mode" data-mode="contains">Contains</button>
-                    <button type="button" class="sim-mode" data-mode="fuzzy">Fuzzy</button>
-                </div>
-                <div class="sim-input-group">
-                    <input type="text" id="sim-query" placeholder="Type a query term" onkeyup="simSearch()">
-                    <button type="button" class="btn btn-ghost" onclick="clearSim()">Clear</button>
-                </div>
-                <div class="sim-result-head">
-                    <span id="sim-status" class="sim-status">No query</span>
-                    <span id="sim-count" class="sim-count">0 matches</span>
-                </div>
-                <div id="sim-results" class="sim-results"></div>
-                <div id="sim-trace" class="sim-trace"></div>
-                <p class="sim-hint">Fuzzy mode uses edit distance <= 1.</p>
-            </div>
-
-            <div class="mistake-box">
-                <h4>Mistake Mode</h4>
-                <p>Inject a common error and then recover it.</p>
-                <div class="mistake-actions">
-                    <button type="button" class="btn btn-ghost" onclick="runMistake('wrong-mode')">Wrong mode
-                        challenge</button>
-                    <button type="button" class="btn btn-ghost" onclick="runMistake('typo')">Typo challenge</button>
-                    <button type="button" class="btn btn-ghost" onclick="runMistake('empty')">Empty query
-                        challenge</button>
-                </div>
-                <p id="mistake-status" class="sim-hint"></p>
-            </div>
         </div>
+    </div>
+
+    <div class="search-sim-box" id="search-sim-box" style="display:none">
+        <h4>Search Simulator Arena</h4>
+        <p class="sim-help">Run queries and inspect exactly why a token matched.</p>
+        <div class="sim-mode-row">
+            <button type="button" class="sim-mode active" data-mode="exact">Exact</button>
+            <button type="button" class="sim-mode" data-mode="prefix">Prefix</button>
+            <button type="button" class="sim-mode" data-mode="contains">Contains</button>
+            <button type="button" class="sim-mode" data-mode="fuzzy">Fuzzy</button>
+        </div>
+        <div class="sim-input-group">
+            <input type="text" id="sim-query" placeholder="Type a query term" onkeyup="simSearch()">
+            <button type="button" class="btn btn-ghost" onclick="clearSim()">Clear</button>
+        </div>
+        <div class="sim-result-head">
+            <span id="sim-status" class="sim-status">No query</span>
+            <span id="sim-count" class="sim-count">0 matches</span>
+        </div>
+        <div id="sim-results" class="sim-results"></div>
+        <div id="sim-trace" class="sim-trace"></div>
+        <p class="sim-hint">Fuzzy mode uses edit distance <= 1.</p>
+    </div>
+
+    <div class="mistake-box" id="mistake-box" style="display:none">
+        <h4>Mistake Mode</h4>
+        <p>Inject a common error and then recover it.</p>
+        <div class="mistake-actions">
+            <button type="button" class="btn btn-ghost" onclick="runMistake('wrong-mode')">Wrong mode
+                challenge</button>
+            <button type="button" class="btn btn-ghost" onclick="runMistake('typo')">Typo challenge</button>
+            <button type="button" class="btn btn-ghost" onclick="runMistake('empty')">Empty query
+                challenge</button>
+        </div>
+        <p id="mistake-status" class="sim-hint"></p>
     </div>
 </div>
 
 <div class="card judge-card" id="judge-summary-card">
-    <h3 class="card-title">Judge Summary Card</h3>
+    <h3 class="card-title">Summary Card</h3>
     <div class="judge-grid">
         <div>
             <strong>Guarantees</strong>
@@ -187,7 +183,7 @@
             </ul>
         </div>
     </div>
-    <button type="button" class="btn btn-primary" onclick="copyJudgeSummary()">Copy Judge Summary</button>
+
 </div>
 
 <div class="card terms-card">
@@ -757,6 +753,10 @@
         }
     }
     function stagedReveal(ids) {
+        document.getElementById('arrow-1').style.display = 'block';
+        document.getElementById('arrow-2').style.display = 'block';
+        document.getElementById('search-sim-box').style.display = 'block';
+        document.getElementById('mistake-box').style.display = 'block';
         ids.forEach((id, idx) => {
             const el = document.getElementById(id);
             if (!el) return;
@@ -922,10 +922,7 @@
         persistProgress();
     }
 
-    function updateGamePanel() {
-        document.getElementById('mission-score').textContent = String(game.score);
-        document.getElementById('mission-rank').textContent = rankForScore(game.score);
-    }
+    function updateGamePanel() { /* score UI removed */ }
 
     function rankForScore(score) {
         if (score >= 210) return 'Judge Ready';
@@ -944,11 +941,55 @@
 
 
 
-    function copyJudgeSummary() {
-        const text = 'BlindBit SSE summary: encrypted storage, tokenized search, 2FA-gated access, declared leakage (access/search/size/timing), mitigations (lockouts, rate limits, headers, decoys).';
-        navigator.clipboard.writeText(text).then(() => {
-            logMission('Judge summary copied to clipboard.');
-        });
+    function downloadSummaryPDF() {
+        const card = document.getElementById('judge-summary-card');
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>BlindBit Summary</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 40px; color: #222; }
+                    h1 { font-size: 22px; margin-bottom: 20px; }
+                    .section { margin-bottom: 16px; }
+                    .section strong { display: block; margin-bottom: 6px; font-size: 15px; }
+                    ul { margin: 0; padding-left: 20px; }
+                    li { margin-bottom: 4px; font-size: 13px; color: #444; }
+                </style>
+            </head>
+            <body>
+                <h1>BlindBit SSE &mdash; Summary Card</h1>
+                <div class="section">
+                    <strong>Guarantees</strong>
+                    <ul>
+                        <li>Encrypted blobs, not plaintext storage</li>
+                        <li>Tokenized encrypted search path</li>
+                        <li>2FA-gated key sessions for sensitive actions</li>
+                    </ul>
+                </div>
+                <div class="section">
+                    <strong>Declared Leakage</strong>
+                    <ul>
+                        <li>Access pattern</li>
+                        <li>Search pattern</li>
+                        <li>Size and timing side-channels</li>
+                    </ul>
+                </div>
+                <div class="section">
+                    <strong>Mitigations</strong>
+                    <ul>
+                        <li>Lockouts and rate limits</li>
+                        <li>Header hardening and safe errors</li>
+                        <li>Optional decoy lookups</li>
+                    </ul>
+                </div>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.onload = function () {
+            printWindow.print();
+        };
     }
 
     function logMission(text) { /* removed */ }
