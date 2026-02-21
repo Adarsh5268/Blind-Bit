@@ -42,6 +42,16 @@ def _auth_context(**kwargs) -> dict:
     return ctx
 
 
+def google_signin_start_view(request):
+    if not bool(getattr(settings, 'GOOGLE_OAUTH_AVAILABLE', False)):
+        messages.error(
+            request,
+            'Google sign-in is not enabled on this server yet. Install dependencies and restart.',
+        )
+        return redirect('login')
+    return redirect('/accounts/google/login/')
+
+
 def _client_ip(request):
     xff = request.META.get('HTTP_X_FORWARDED_FOR', '')
     if xff:
