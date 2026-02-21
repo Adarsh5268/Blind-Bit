@@ -4,6 +4,7 @@ charset-normalizer==3.4.4
 cryptography==46.0.5
 Django==5.1.3
 django-ratelimit==4.1.0
+django-allauth==65.11.2
 pdfminer.six==20260107
 pillow==12.1.1
 pycparser==3.0
