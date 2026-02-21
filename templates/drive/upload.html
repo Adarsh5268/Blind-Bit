@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Upload File{% endblock %}
+{% block page_title %}Upload File{% endblock %}
+
+{% block top_actions %}
+<a href="{% url 'files' %}" class="btn btn-ghost-orange">View My Files</a>
+{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width:760px;">
+    <h3 class="card-title">Encrypted File Upload</h3>
+    <p style="color:var(--text-dim);font-size:14px;margin-bottom:14px;">
+        Upload a PDF/TXT file and optionally add secret keywords that should be searchable even if not present in the file.
+    </p>
+
+    <div class="form-group">
+        <label for="upload-file-input">File</label>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <label for="upload-file-input" class="btn btn-ghost-orange" style="cursor:pointer;">Browse File</label>
+            <span id="upload-file-name" style="font-size:13px;color:var(--text-dim);">No file selected</span>
+        </div>
+        <input id="upload-file-input" type="file" accept=".pdf,.txt" style="display:none">
+    </div>
+
+    <div class="form-group" style="margin-top:14px;">
+        <label for="manual-keyword-input">Extra Keyword(s) (optional)</label>
+        <input id="manual-keyword-input" type="text"
+            placeholder="Example: projectx, fallback, emergency-key">
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
+        <button class="btn btn-primary" onclick="submitUpload()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            Encrypt &amp; Upload
+        </button>
+        <a href="{% url 'files' %}" class="btn btn-ghost">Cancel</a>
+    </div>
+
+    <div id="upload-status" class="card"
+        style="display:none;margin-top:16px;background:var(--orange-soft);border-color:var(--border-warm);">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div class="spinner"></div>
+            <span id="upload-msg" style="color:var(--orange-dark);font-weight:500;">Encrypting &amp; indexing...</span>
+        </div>
+    </div>
+
+    <div id="upload-result" class="card" style="display:none;margin-top:16px;">
+        <h3 class="card-title">Upload Complete</h3>
+        <div id="upload-details"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/upload.js' %}"></script>
+{% endblock %}
