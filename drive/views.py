@@ -442,7 +442,7 @@ def search_api(request):
                             os.unlink(tmp_pdf_path)
                 else:
                     full_text = plain.decode('utf-8', errors='replace')
-                preview = _preview_around_match(full_text, preview_terms, width=400)
+                preview = _preview_around_match(full_text, preview_terms, width=None)
             except:
                 full_text = ''
                 preview = '[decrypt error]'
@@ -532,7 +532,7 @@ def search_api(request):
             try:
                 rec = EncryptedRecord.objects.get(record_id=rid)
                 plain = decrypt_record(bytes(rec.encrypted_data), keys['file_encryption_key'])
-                preview = _preview_around_match(plain, preview_terms, width=400)
+                preview = _preview_around_match(plain, preview_terms, width=None)
             except:
                 preview = '[decrypt error]'
 
