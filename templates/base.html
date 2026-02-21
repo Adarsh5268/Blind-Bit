@@ -26,6 +26,7 @@
                 <span class="brand-text">BlindBit</span>
             </div>
             <nav class="sidebar-nav">
+                <p class="nav-section-title">Workspace</p>
                 <a href="{% url 'dashboard' %}"
                     class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                     <span class="nav-icon">
@@ -81,6 +82,7 @@
                     </span>
                     <span>Records</span>
                 </a>
+                <p class="nav-section-title">Intelligence</p>
                 <a href="{% url 'visualizer' %}"
                     class="nav-item {% if request.resolver_match.url_name == 'visualizer' %}active{% endif %}">
                     <span class="nav-icon">
@@ -114,14 +116,14 @@
                                 <path d="M20 6 9 17l-5-5" />
                             </svg> Verified</span>
                         {% else %}
-                        <span class="user-badge" style="color:var(--warn);">2FA Pending</span>
+                        <span class="user-badge pending">2FA Pending</span>
+                        <a href="{% url 'setup_2fa' %}" class="user-badge-link">Set up now</a>
                         {% endif %}
                     </div>
                 </div>
                 <form action="{% url 'logout' %}" method="post" id="logout-form">
                     {% csrf_token %}
-                    <button type="submit" class="nav-item logout"
-                        style="background:none; border:none; color:inherit; font:inherit; cursor:pointer; width:100%; text-align:left;">
+                    <button type="submit" class="nav-item nav-button logout">
                         <span class="nav-icon">
                             <svg viewBox="0 0 24 24">
                                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
