@@ -146,7 +146,7 @@ SESSION_COOKIE_AGE = 3600              # 1 hour session expiry
 SESSION_SAVE_EVERY_REQUEST = True      # Rolling expiry on activity
 
 # --- CSRF Security ---
-CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_SAMESITE = 'Lax'
 
 # --- Security Headers ---

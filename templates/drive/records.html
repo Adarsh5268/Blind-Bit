@@ -154,21 +154,36 @@
     }
 
     async function viewRecord(rid) {
+        const popup = window.BlindBitPopup;
         try {
             const r = await fetch(`/records/view/${rid}/`);
             const d = await r.json();
-            if (!r.ok || d.error) { alert(d.error || 'Failed to view record'); return; }
+            if (!r.ok || d.error) {
+                await popup.alert(d.error || 'Failed to view record', { title: 'View Failed', tone: 'red' });
+                return;
+            }
             document.getElementById('record-content').textContent = d.content;
             const modal = document.getElementById('record-modal');
             modal.style.display = 'flex';
-        } catch (e) { alert(e.message); }
+        } catch (e) {
+            await popup.alert(e.message, { title: 'View Failed', tone: 'red' });
+        }
     }
 
     async function deleteRecord(rid) {
-        if (!confirm('Delete this record?')) return;
+        const popup = window.BlindBitPopup;
+        const confirmed = await popup.confirm('Delete this record?', {
+            title: 'Delete Record',
+            tone: 'red',
+            confirmText: 'Delete',
+        });
+        if (!confirmed) return;
         const r = await fetch(`/records/delete/${rid}/`, { method: 'POST', headers: { 'X-CSRFToken': CSRF } });
         const d = await r.json();
-        if (!r.ok || d.error) { alert(d.error || 'Delete failed'); return; }
+        if (!r.ok || d.error) {
+            await popup.alert(d.error || 'Delete failed', { title: 'Delete Failed', tone: 'red' });
+            return;
+        }
         document.getElementById('rec-' + rid)?.remove();
     }
 

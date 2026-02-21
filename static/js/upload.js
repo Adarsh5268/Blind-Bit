@@ -15,13 +15,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function submitUpload() {
+    const popup = window.BlindBitPopup;
     const fileInput = document.getElementById('upload-file-input');
     const keywordInput = document.getElementById('manual-keyword-input');
     const file = fileInput.files[0];
     const manualKeyword = (keywordInput.value || '').trim();
 
     if (!file) {
-        alert('Please choose a file to upload.');
+        await popup.alert('Please choose a file to upload.', { title: 'File Required' });
         return;
     }
 
@@ -47,7 +48,7 @@ async function submitUpload() {
         status.style.display = 'none';
 
         if (!res.ok || d.error) {
-            alert(d.error || 'Upload failed');
+            await popup.alert(d.error || 'Upload failed', { title: 'Upload Failed', tone: 'red' });
             return;
         }
 
@@ -72,6 +73,6 @@ async function submitUpload() {
         if (fileName) fileName.textContent = 'No file selected';
     } catch (e) {
         status.style.display = 'none';
-        alert('Upload failed: ' + e.message);
+        await popup.alert('Upload failed: ' + e.message, { title: 'Upload Failed', tone: 'red' });
     }
 }

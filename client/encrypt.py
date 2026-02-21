@@ -120,18 +120,13 @@ MIN_NGRAM = 2  # minimum substring length to index
 
 def generate_ngrams(word: str, min_n: int = MIN_NGRAM) -> set:
     """Generate character-level n-grams from a word for substring search.
-
-    For word "encryption" with min_n=3:
-        enc, ncr, cry, ryp, ypt, pti, tio, ion,   (3-grams)
-        encr, ncry, cryp, rypt, ...                (4-grams)
-        ... up to the full word.
-
-    This allows searching for "crypt" to match "encryption".
+    Cap word length to 32 to prevent quadratic hang.
     """
     ngrams = set()
-    for n in range(min_n, len(word) + 1):
-        for i in range(len(word) - n + 1):
-            ngrams.add(word[i:i + n])
+    safe_word = word[:32]
+    for n in range(min_n, len(safe_word) + 1):
+        for i in range(len(safe_word) - n + 1):
+            ngrams.add(safe_word[i:i + n])
     return ngrams
 
 

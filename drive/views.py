@@ -22,7 +22,7 @@ from django.utils.encoding import escape_uri_path
 from accounts.models import UserProfile
 from .models import EncryptedFile, FileIndex, EncryptedRecord, RecordIndex, SearchHistory
 from .sse_bridge import (
-    derive_keys, encrypt_file_data, decrypt_file_data,
+    derive_keys, derive_master_key, encrypt_file_data, decrypt_file_data,
     build_index, generate_tokens_for_search, visualize_encryption,
     preprocess, extract_text, encrypt_record, decrypt_record,
     build_record_index, find_fuzzy_keywords,
@@ -32,19 +32,52 @@ from .sse_bridge import (
 logger = logging.getLogger(__name__)
 
 
+def _restore_master_key_from_cached_passphrase(request) -> bool:
+    """
+    Best-effort recovery when a valid auth/2FA session lost '_mk'.
+    Uses a server-side cached passphrase set during login.
+    """
+    if not request.user.is_authenticated:
+        return False
+    if request.session.get('_mk'):
+        return True
+
+    cached_passphrase = request.session.get('_vault_passphrase')
+    if not cached_passphrase:
+        return False
+
+    profile = UserProfile.objects.get_or_create(user=request.user)[0]
+    if not profile.verify_data_passphrase(cached_passphrase):
+        return False
+
+    profile.bootstrap_data_passphrase_from_password(cached_passphrase)
+    secret = profile.get_totp_secret()
+    if not secret:
+        secret = profile.generate_totp_secret()
+
+    mk = derive_master_key(cached_passphrase, secret, bytes.fromhex(profile.salt))
+    request.session['_mk'] = base64.b64encode(mk).decode()
+    return True
+
+
 def _get_keys(request):
     """Get user's derived keys from session.
 
-    Reads the DEK (Data Encryption Key) stored in session['_dek'] and
+    Reads the Master Key stored in session['_mk'] and
     expands it into the three purpose-specific sub-keys via HKDF.
     Returns None if the vault is locked or the user is not authenticated.
     """
-    dek_b64 = request.session.get('_dek')  # was '_mk' pre-DEK upgrade
-    if not dek_b64:
+    mk_b64 = request.session.get('_mk')
+    if not mk_b64 and request.session.get('is_2fa_verified'):
+        if _restore_master_key_from_cached_passphrase(request):
+            mk_b64 = request.session.get('_mk')
+            
+    if not mk_b64:
+        logger.warning(f"Vault key missing in session for user {request.user.id}")
         return None
     try:
-        dek = base64.b64decode(dek_b64)
-        return derive_keys(dek)
+        mk = base64.b64decode(mk_b64)
+        return derive_keys(mk)
     except Exception:
         return None
 
@@ -164,6 +197,16 @@ def files_view(request):
 
 @login_required
 def upload_page(request):
+    profile = UserProfile.objects.get_or_create(user=request.user)[0]
+    if profile.is_2fa_enabled and not request.session.get('is_2fa_verified'):
+        request.session['pending_2fa_uid'] = request.user.id
+        return redirect('verify_2fa')
+    
+    # Ensure vault is unlocked
+    if not request.session.get('_mk'):
+        messages.warning(request, 'Please unlock your vault to upload files.')
+        return redirect('unlock_data')
+        
     return render(request, 'drive/upload.html')
 
 
@@ -172,6 +215,8 @@ def upload_page(request):
 def upload_file(request):
     keys = _get_keys(request)
     if not keys:
+        if request.session.get('is_2fa_verified'):
+            return JsonResponse({'error': 'Vault key is unavailable for this session. Please sign in again.'}, status=403)
         return JsonResponse({'error': '2FA required'}, status=403)
 
     uploaded = request.FILES.get('file')
@@ -193,8 +238,12 @@ def upload_file(request):
         t0 = time.perf_counter()
 
         # Extract text and preprocess
+        logger.info(f"Extracting text from {tmp_path}")
         raw_text = extract_text(tmp_path)
+        logger.info(f"Text extracted: {len(raw_text)} chars")
+        
         keywords = preprocess(raw_text)
+        logger.info(f"Keywords preprocessed: {len(keywords)} unique")
 
         manual_keywords = []
         if manual_keyword_input:
@@ -217,22 +266,32 @@ def upload_file(request):
             return JsonResponse({'error': 'No searchable content found'}, status=400)
 
         # Encrypt file
+        logger.info("Encrypting file data...")
         file_id, enc_data, enc_time = encrypt_file_data(tmp_path, keys['file_encryption_key'])
+        logger.info(f"File encrypted: {file_id}, time: {enc_time}s")
 
         # Build index
+        logger.info("Building encrypted index...")
         counter = _get_counter(request)
         index_entries, idx_time, tfidf = build_index(
             keywords, file_id, keys['hmac_key'],
             keys['token_randomization_key'], counter, raw_text=raw_text
         )
+        logger.info(f"Index built: {len(index_entries)} tokens, time: {idx_time}s")
 
         # Store in DB
         ef = EncryptedFile.objects.create(
             file_id=file_id, filename=uploaded.name,
             encrypted_data=enc_data, owner=request.user
         )
-        for token, fid, ttype, score in index_entries:
-            FileIndex.objects.create(file=ef, token=token, token_type=ttype, score=score)
+        
+        logger.info(f"Saving {len(index_entries)} tokens to database...")
+        objs = [
+            FileIndex(file=ef, token=token, token_type=ttype, score=score)
+            for token, fid, ttype, score in index_entries
+        ]
+        FileIndex.objects.bulk_create(objs, batch_size=1000)
+        logger.info("Database save complete.")
 
         k = sum(1 for e in index_entries if e[2] == 'K')
         n = sum(1 for e in index_entries if e[2] == 'N')
@@ -259,6 +318,9 @@ def upload_file(request):
 
 @login_required
 def search_view(request):
+    if not request.session.get('_mk'):
+        messages.warning(request, 'Please unlock your vault to search.')
+        return redirect('unlock_data')
     return render(request, 'drive/search.html')
 
 
@@ -649,9 +711,13 @@ def search_api(request):
 
 @login_required
 def download_file(request, file_id):
+    if not request.session.get('_mk'):
+        messages.warning(request, 'Please unlock your vault to download files.')
+        return redirect('unlock_data')
+        
     keys = _get_keys(request)
     if not keys:
-        messages.error(request, '2FA required to download files.')
+        messages.error(request, 'Vault key is unavailable.')
         return redirect('files')
 
     ef = get_object_or_404(EncryptedFile, file_id=file_id, owner=request.user)
@@ -680,6 +746,9 @@ def delete_file(request, file_id):
 
 @login_required
 def records_view(request):
+    if not request.session.get('_mk'):
+        messages.warning(request, 'Please unlock your vault to view records.')
+        return redirect('unlock_data')
     records = EncryptedRecord.objects.filter(owner=request.user)
     return render(request, 'drive/records.html', {'records': records})
 

@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
+from accounts.models import UserProfile
 from .models import EncryptedFile, EncryptedRecord
 from .views import parse_query
 
@@ -18,9 +19,51 @@ class DriveSecurityAndSearchTests(TestCase):
 
     def _set_2fa_session(self):
         session = self.client.session
-        session['_mk'] = base64.b64encode(b'test-master-key').decode()
+        session['_dek'] = base64.b64encode(b'test-master-key').decode()
         session['_2fa_verified'] = True
+        session['is_2fa_verified'] = True
         session.save()
+
+    def test_upload_page_allows_access_when_vault_locked(self):
+        session = self.client.session
+        session['_2fa_verified'] = True
+        session['is_2fa_verified'] = True
+        session.pop('_dek', None)
+        session.save()
+
+        response = self.client.get(reverse('upload_page'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_upload_file_returns_session_key_error_when_vault_locked(self):
+        session = self.client.session
+        session['_2fa_verified'] = True
+        session['is_2fa_verified'] = True
+        session.pop('_dek', None)
+        session.save()
+
+        response = self.client.post(reverse('upload_file'))
+        self.assertEqual(response.status_code, 403)
+        payload = response.json()
+        self.assertIn('Vault key is unavailable', payload['error'])
+
+    def test_upload_file_recovers_dek_from_cached_passphrase(self):
+        profile = UserProfile.objects.create(user=self.user, is_2fa_enabled=True)
+        profile.generate_totp_secret()
+        profile.set_data_passphrase('VeryStrongPass123')
+
+        session = self.client.session
+        session['_2fa_verified'] = True
+        session['is_2fa_verified'] = True
+        session['_vault_passphrase'] = 'VeryStrongPass123'
+        session.pop('_dek', None)
+        session.save()
+
+        response = self.client.post(reverse('upload_file'))
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()['error'], 'No file selected')
+
+        session = self.client.session
+        self.assertTrue(bool(session.get('_dek')))
 
     @patch('drive.views.derive_keys', return_value={
         'file_encryption_key': b'k' * 32,

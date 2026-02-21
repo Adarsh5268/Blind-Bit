@@ -8,12 +8,19 @@ function getCSRF() {
 }
 
 async function uploadFile(input) {
+    const popup = window.BlindBitPopup;
     const file = input.files[0];
     if (!file) return;
-    const wantsSecretKeyword = confirm('Do you want to add a custom secret keyword for this file?');
+    const wantsSecretKeyword = await popup.confirm(
+        'Do you want to add a custom secret keyword for this file?',
+        { title: 'Secret Keyword', confirmText: 'Add Keyword' }
+    );
     let manualKeyword = '';
     if (wantsSecretKeyword) {
-        const val = prompt('Enter a secret keyword (or multiple words). This will be stored for search even if not present in the file:', '');
+        const val = await popup.prompt(
+            'Enter a secret keyword (or multiple words). It will be searchable even if not present in the file.',
+            { title: 'Secret Keyword Input', confirmText: 'Use Keyword', placeholder: 'e.g. project-orchid' }
+        );
         manualKeyword = (val || '').trim();
     }
 
@@ -39,7 +46,7 @@ async function uploadFile(input) {
         status.style.display = 'none';
 
         if (d.error) {
-            alert(d.error);
+            await popup.alert(d.error, { title: 'Upload Failed', tone: 'red' });
             return;
         }
 
@@ -61,13 +68,19 @@ async function uploadFile(input) {
         setTimeout(() => location.reload(), 2000);
     } catch (e) {
         status.style.display = 'none';
-        alert('Upload failed: ' + e.message);
+        await popup.alert('Upload failed: ' + e.message, { title: 'Upload Failed', tone: 'red' });
     }
     input.value = '';
 }
 
 async function deleteFile(fid) {
-    if (!confirm('Delete this encrypted file?')) return;
+    const popup = window.BlindBitPopup;
+    const confirmed = await popup.confirm('Delete this encrypted file?', {
+        title: 'Delete File',
+        tone: 'red',
+        confirmText: 'Delete',
+    });
+    if (!confirmed) return;
     try {
         const res = await fetch(`/delete-file/${fid}/`, {
             method: 'POST',
@@ -75,7 +88,7 @@ async function deleteFile(fid) {
         });
         const d = await res.json();
         if (!res.ok || d.error) {
-            alert(d.error || 'Delete failed');
+            await popup.alert(d.error || 'Delete failed', { title: 'Delete Failed', tone: 'red' });
             return;
         }
         const el = document.getElementById('file-' + fid);
@@ -85,27 +98,34 @@ async function deleteFile(fid) {
             setTimeout(() => el.remove(), 300);
         }
     } catch (e) {
-        alert('Delete failed: ' + e.message);
+        await popup.alert('Delete failed: ' + e.message, { title: 'Delete Failed', tone: 'red' });
     }
 }
 
 async function viewRecord(rid) {
+    const popup = window.BlindBitPopup;
     try {
         const res = await fetch(`/records/view/${rid}/`);
         const d = await res.json();
         if (!res.ok || d.error) {
-            alert(d.error || 'Failed to view record');
+            await popup.alert(d.error || 'Failed to view record', { title: 'View Failed', tone: 'red' });
             return;
         }
         document.getElementById('record-content').textContent = d.content;
         document.getElementById('record-modal').style.display = 'flex';
     } catch (e) {
-        alert('Failed to view record: ' + e.message);
+        await popup.alert('Failed to view record: ' + e.message, { title: 'View Failed', tone: 'red' });
     }
 }
 
 async function deleteRecord(rid) {
-    if (!confirm('Delete this record?')) return;
+    const popup = window.BlindBitPopup;
+    const confirmed = await popup.confirm('Delete this record?', {
+        title: 'Delete Record',
+        tone: 'red',
+        confirmText: 'Delete',
+    });
+    if (!confirmed) return;
     try {
         const res = await fetch(`/records/delete/${rid}/`, {
             method: 'POST',
@@ -113,7 +133,7 @@ async function deleteRecord(rid) {
         });
         const d = await res.json();
         if (!res.ok || d.error) {
-            alert(d.error || 'Delete failed');
+            await popup.alert(d.error || 'Delete failed', { title: 'Delete Failed', tone: 'red' });
             return;
         }
         const el = document.getElementById('rec-' + rid);
@@ -122,7 +142,7 @@ async function deleteRecord(rid) {
             setTimeout(() => el.remove(), 300);
         }
     } catch (e) {
-        alert('Delete failed: ' + e.message);
+        await popup.alert('Delete failed: ' + e.message, { title: 'Delete Failed', tone: 'red' });
     }
 }
 

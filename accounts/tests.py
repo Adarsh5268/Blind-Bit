@@ -1,8 +1,11 @@
 import pyotp
+from unittest.mock import Mock
 from django.contrib.auth.models import User
+from django.contrib.auth.models import AnonymousUser
 from django.core.cache import cache
-from django.test import TestCase
+from django.test import TestCase, RequestFactory
 from django.urls import reverse
+from accounts.adapters import BlindBitSocialAccountAdapter
 from accounts.models import UserProfile
 
 
@@ -324,4 +327,27 @@ class DEKTests(TestCase):
         import os
         with self.assertRaises(ValueError):
             profile.unwrap_dek(os.urandom(32))
+
+
+class SocialAdapterTests(TestCase):
+    def test_pre_social_login_links_existing_user_with_same_email(self):
+        existing = User.objects.create_user(
+            username='existing-user',
+            email='existing@example.com',
+            password='StrongPassword123',
+        )
+        request = RequestFactory().get('/accounts/google/login/callback/')
+        request.user = AnonymousUser()
+
+        sociallogin = Mock()
+        sociallogin.is_existing = False
+        sociallogin.user = Mock(email='existing@example.com')
+        sociallogin.account = Mock(extra_data={'email': 'existing@example.com'})
+        sociallogin.email_addresses = []
+        sociallogin.connect = Mock()
+
+        adapter = BlindBitSocialAccountAdapter()
+        adapter.pre_social_login(request, sociallogin)
+
+        sociallogin.connect.assert_called_once_with(request, existing)
 

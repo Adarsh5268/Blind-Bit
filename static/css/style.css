@@ -1875,3 +1875,152 @@ h3 {
         text-align: left;
     }
 }
+
+/* ==========================================================================
+   THEMED POPUPS
+   ========================================================================== */
+#bb-popup-root {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    pointer-events: none;
+}
+
+.bb-popup-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(24, 21, 18, 0.46);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    transition: opacity 0.18s ease;
+    pointer-events: auto;
+}
+
+.bb-popup-overlay.is-open {
+    opacity: 1;
+}
+
+.bb-popup-card {
+    width: min(480px, 100%);
+    background: linear-gradient(168deg, rgba(247, 248, 251, 0.98), rgba(241, 243, 248, 0.92));
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    box-shadow: var(--shadow-lg);
+    padding: 22px 22px 18px;
+    position: relative;
+    transform: translateY(6px) scale(0.98);
+    transition: transform 0.2s ease;
+}
+
+.bb-popup-overlay.is-open .bb-popup-card {
+    transform: translateY(0) scale(1);
+}
+
+.bb-popup-accent {
+    width: 48px;
+    height: 4px;
+    border-radius: 999px;
+    margin-bottom: 14px;
+    background: var(--orange);
+    box-shadow: 0 2px 10px rgba(249, 115, 22, 0.38);
+}
+
+.bb-tone-indigo .bb-popup-accent {
+    background: var(--indigo);
+    box-shadow: 0 2px 10px rgba(99, 102, 241, 0.36);
+}
+
+.bb-tone-red .bb-popup-accent {
+    background: var(--error);
+    box-shadow: 0 2px 10px rgba(239, 68, 68, 0.36);
+}
+
+.bb-popup-title {
+    margin: 0 0 8px;
+    font-size: 22px;
+    line-height: 1.25;
+}
+
+.bb-popup-message {
+    margin: 0;
+    color: var(--text-dim);
+    font-size: 14px;
+    line-height: 1.6;
+    white-space: pre-line;
+}
+
+.bb-popup-body {
+    margin-top: 14px;
+}
+
+.bb-popup-input {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 14px;
+    padding: 12px 14px;
+    transition: var(--transition);
+}
+
+.bb-popup-input:focus {
+    outline: none;
+    border-color: var(--orange);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.16);
+}
+
+.bb-popup-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.bb-popup-btn {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 10px 14px;
+    line-height: 1;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.bb-popup-cancel {
+    background: rgba(255, 255, 255, 0.7);
+    color: var(--text-dim);
+}
+
+.bb-popup-cancel:hover {
+    transform: translateY(-1px);
+    color: var(--text);
+}
+
+.bb-popup-confirm {
+    background: var(--orange);
+    border-color: rgba(249, 115, 22, 0.4);
+    color: #fff;
+    box-shadow: 0 10px 18px rgba(249, 115, 22, 0.26);
+}
+
+.bb-popup-confirm:hover {
+    background: var(--orange-dark);
+    transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+    .bb-popup-card {
+        padding: 18px 16px 15px;
+        border-radius: 20px;
+    }
+
+    .bb-popup-title {
+        font-size: 20px;
+    }
+}
