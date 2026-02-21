@@ -186,7 +186,7 @@ class AccountPolicyTests(TestCase):
         self.assertEqual(response4.status_code, 200)
         self.assertContains(response4, 'Invalid recovery code.')
 
-    def test_setup_2fa_redirects_to_dashboard_after_verify(self):
+    def test_setup_2fa_redirects_to_recovery_codes_after_verify(self):
         user = User.objects.create_user(username='sam', password='StrongPassword123')
         profile = UserProfile.objects.create(user=user, is_2fa_enabled=False)
         profile.generate_totp_secret()
@@ -197,9 +197,8 @@ class AccountPolicyTests(TestCase):
             data={'totp_code': pyotp.TOTP(profile.get_totp_secret()).now()},
         )
         self.assertEqual(verify.status_code, 302)
-        self.assertEqual(verify.url, reverse('dashboard'))
+        self.assertEqual(verify.url, reverse('recovery_codes'))
 
-        # Recovery codes are still available on-demand after the redirect.
         page = self.client.get(reverse('recovery_codes'))
         self.assertEqual(page.status_code, 200)
         self.assertContains(page, 'Recovery Codes')

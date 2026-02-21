@@ -475,8 +475,8 @@ def setup_2fa_view(request):
             _clear_failures('otp_setup_ip', ip)
             codes = profile.generate_recovery_codes()
             request.session['_fresh_recovery_codes'] = codes
-            messages.success(request, '2FA verified. You are now protected. Save your recovery codes from the dashboard.')
-            return redirect('dashboard')
+            messages.success(request, '2FA verified. Save your recovery codes now.')
+            return redirect('recovery_codes')
 
         _register_failure('otp_setup_user', otp_user_key, MAX_OTP_FAILS_USER)
         _register_failure('otp_setup_ip', ip, MAX_OTP_FAILS_IP)

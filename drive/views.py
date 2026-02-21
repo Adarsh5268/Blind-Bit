@@ -39,6 +39,40 @@ from client.sharing_crypto import (
 logger = logging.getLogger(__name__)
 
 
+def _auto_unlock_for_social_user(request, profile) -> bool:
+    """
+    Rebuild vault key for social-login users without a usable password.
+    """
+    user = request.user
+    if user.has_usable_password():
+        return False
+
+    synthetic_passphrase = f"social::{user.id}::{user.password}"
+    if not profile.is_data_passphrase_set:
+        profile.set_data_passphrase(synthetic_passphrase)
+
+    if not profile.verify_data_passphrase(synthetic_passphrase):
+        has_existing_data = (
+            EncryptedFile.objects.filter(owner=user).exists()
+            or EncryptedRecord.objects.filter(owner=user).exists()
+        )
+        if has_existing_data:
+            return False
+        # Safe bootstrap for first-time social users with no encrypted data yet.
+        profile.set_data_passphrase(synthetic_passphrase)
+        if not profile.verify_data_passphrase(synthetic_passphrase):
+            return False
+
+    secret = profile.get_totp_secret()
+    if not secret:
+        secret = profile.generate_totp_secret()
+
+    mk = derive_master_key(synthetic_passphrase, secret, bytes.fromhex(profile.salt))
+    request.session['_vault_passphrase'] = synthetic_passphrase
+    request.session['_mk'] = base64.b64encode(mk).decode()
+    return True
+
+
 def _restore_master_key_from_cached_passphrase(request) -> bool:
     """
     Best-effort recovery when a valid auth/2FA session lost '_mk'.
@@ -49,13 +83,13 @@ def _restore_master_key_from_cached_passphrase(request) -> bool:
     if request.session.get('_mk'):
         return True
 
+    profile = UserProfile.objects.get_or_create(user=request.user)[0]
     cached_passphrase = request.session.get('_vault_passphrase')
     if not cached_passphrase:
-        return False
+        return _auto_unlock_for_social_user(request, profile)
 
-    profile = UserProfile.objects.get_or_create(user=request.user)[0]
     if not profile.verify_data_passphrase(cached_passphrase):
-        return False
+        return _auto_unlock_for_social_user(request, profile)
 
     profile.bootstrap_data_passphrase_from_password(cached_passphrase)
     secret = profile.get_totp_secret()
@@ -212,12 +246,7 @@ def upload_page(request):
     if profile.is_2fa_enabled and not request.session.get('is_2fa_verified'):
         request.session['pending_2fa_uid'] = request.user.id
         return redirect('verify_2fa')
-    
-    # Ensure vault is unlocked
-    if not request.session.get('_mk') and not _restore_master_key_from_cached_passphrase(request):
-        messages.warning(request, 'Please unlock your vault to upload files.')
-        return redirect('unlock_data')
-        
+
     return render(request, 'drive/upload.html')
 
 
@@ -810,10 +839,14 @@ def delete_file(request, file_id):
 
 @login_required
 def records_view(request):
+    records = EncryptedRecord.objects.filter(owner=request.user)
     if not request.session.get('_mk') and not _restore_master_key_from_cached_passphrase(request):
+        # For first-time users with no encrypted records yet, show empty state
+        # instead of forcing a vault-unlock prompt they cannot act on.
+        if not records.exists():
+            return render(request, 'drive/records.html', {'records': records})
         messages.warning(request, 'Please unlock your vault to view records.')
         return redirect('unlock_data')
-    records = EncryptedRecord.objects.filter(owner=request.user)
     return render(request, 'drive/records.html', {'records': records})
 
 

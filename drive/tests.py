@@ -80,9 +80,6 @@ class DriveSecurityAndSearchTests(TestCase):
         response = self.client.get(reverse('upload_page'))
         self.assertEqual(response.status_code, 200)
 
-        session = self.client.session
-        self.assertTrue(bool(session.get('_mk')))
-
     @patch('drive.views.derive_keys', return_value={
         'file_encryption_key': b'k' * 32,
         'hmac_key': b'h' * 32,
@@ -183,3 +180,52 @@ class DriveSecurityAndSearchTests(TestCase):
         response = self.client.post(reverse('delete_file', kwargs={'file_id': ef.file_id}))
         self.assertEqual(response.status_code, 200)
         self.assertFalse(EncryptedFile.objects.filter(file_id='file-2').exists())
+
+    def test_records_page_allows_empty_state_when_vault_locked(self):
+        session = self.client.session
+        session['_2fa_verified'] = True
+        session['is_2fa_verified'] = True
+        session.pop('_mk', None)
+        session.pop('_vault_passphrase', None)
+        session.save()
+
+        response = self.client.get(reverse('records'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_records_page_redirects_to_unlock_when_data_exists_and_vault_locked(self):
+        EncryptedRecord.objects.create(
+            record_id='rec-lock-1',
+            record_type='text',
+            encrypted_data=b'abc',
+            keywords_json='[]',
+            owner=self.user,
+        )
+        session = self.client.session
+        session['_2fa_verified'] = True
+        session['is_2fa_verified'] = True
+        session.pop('_mk', None)
+        session.pop('_vault_passphrase', None)
+        session.save()
+
+        response = self.client.get(reverse('records'))
+        self.assertRedirects(response, reverse('unlock_data'))
+
+    def test_upload_file_auto_unlocks_for_social_user_without_cached_passphrase(self):
+        self.user.set_unusable_password()
+        self.user.save(update_fields=['password'])
+        self.client.force_login(self.user)
+        profile = UserProfile.objects.create(user=self.user, is_2fa_enabled=True)
+        profile.generate_totp_secret()
+
+        session = self.client.session
+        session['_2fa_verified'] = True
+        session['is_2fa_verified'] = True
+        session.pop('_mk', None)
+        session.pop('_vault_passphrase', None)
+        session.save()
+
+        response = self.client.post(reverse('upload_file'))
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()['error'], 'No file selected')
+        session = self.client.session
+        self.assertTrue(bool(session.get('_mk')))
