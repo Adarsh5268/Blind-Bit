@@ -512,7 +512,7 @@ def search_api(request):
             try:
                 rec = EncryptedRecord.objects.get(record_id=rid)
                 plain = decrypt_record(bytes(rec.encrypted_data), keys['file_encryption_key'])
-                preview = plain[:400]
+                preview = _preview_around_match(plain, preview_terms, width=400)
             except:
                 preview = '[decrypt error]'
 
