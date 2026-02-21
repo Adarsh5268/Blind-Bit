@@ -224,6 +224,36 @@ def _query_terms_for_preview(query: str):
     return list(dict.fromkeys(terms))
 
 
+def _preview_around_match(full_text: str, terms, width: int = 400) -> str:
+    """Return a preview centered around the first query-term match."""
+    if not full_text:
+        return ''
+    if not terms:
+        return full_text[:width]
+
+    lower_text = full_text.lower()
+    first_idx = -1
+    match_len = 0
+    for term in terms:
+        idx = lower_text.find(term)
+        if idx != -1 and (first_idx == -1 or idx < first_idx):
+            first_idx = idx
+            match_len = len(term)
+
+    if first_idx == -1:
+        return full_text[:width]
+
+    half = width // 2
+    start = max(0, first_idx - half)
+    end = min(len(full_text), first_idx + match_len + half)
+    snippet = full_text[start:end]
+    if start > 0:
+        snippet = '... ' + snippet
+    if end < len(full_text):
+        snippet = snippet + ' ...'
+    return snippet
+
+
 @login_required
 @require_POST
 def search_api(request):
