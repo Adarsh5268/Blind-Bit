@@ -151,6 +151,17 @@ def _set_master_key_from_passphrase(request, profile, passphrase: str) -> bool:
     return True
 
 
+def _auto_unlock_for_social(request, user, profile) -> bool:
+    """Auto-bootstrap and unlock vault for social-only accounts."""
+    if user.has_usable_password():
+        return False
+
+    synthetic_passphrase = f"social::{user.id}::{user.password}"
+    if not profile.is_data_passphrase_set:
+        profile.set_data_passphrase(synthetic_passphrase)
+    return _set_master_key_from_passphrase(request, profile, synthetic_passphrase)
+
+
 def _auth_redirect_target(profile, has_master_key: bool, used_recovery_code: bool = False):
     if used_recovery_code:
         return 'setup_2fa'
@@ -269,9 +280,12 @@ def post_auth_view(request):
         request.session['is_2fa_verified'] = False
 
     if not request.session.get('_mk'):
-        return redirect('unlock_data')
+        if _auto_unlock_for_social(request, request.user, profile):
+            pass
+        else:
+            return redirect('unlock_data')
 
-    return redirect('setup_2fa' if not profile.is_2fa_enabled else 'dashboard')
+    return redirect('dashboard')
 
 
 @ratelimit(key='ip', rate='10/m', method='POST', block=True)
@@ -339,6 +353,8 @@ def verify_2fa_view(request):
         has_master_key = False
         if pre_password:
             has_master_key = _set_master_key_from_passphrase(request, profile, pre_password)
+        elif _auto_unlock_for_social(request, user, profile):
+            has_master_key = True
         request.session.pop('pre_2fa_password', None)
 
         response = redirect(_auth_redirect_target(profile, has_master_key, used_recovery_code))
