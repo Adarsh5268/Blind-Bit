@@ -56,6 +56,7 @@
 
     --transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     --app-header-height: 80px;
+    --sidebar-width: 272px;
 }
 
 * {
@@ -106,8 +107,8 @@ h3 {
    SIDEBAR
 ══════════════════════════════════════════════════════════════ */
 .sidebar {
-    width: 248px;
-    background: rgba(244, 245, 248, 0.84);
+    width: var(--sidebar-width);
+    background: rgba(244, 245, 248, 0.96);
     backdrop-filter: blur(12px);
     border-right: 1px solid var(--border);
     display: flex;
@@ -121,16 +122,16 @@ h3 {
 .sidebar-brand {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     height: var(--app-header-height);
-    padding: 0 20px;
+    padding: 0 22px;
     border-bottom: 1px solid var(--border);
 }
 
 .brand-icon {
     width: 34px;
     height: 34px;
-    background: linear-gradient(135deg, var(--orange), var(--amber));
+    background: var(--orange);
     border-radius: 10px;
     display: flex;
     align-items: center;
@@ -156,51 +157,79 @@ h3 {
 
 .sidebar-nav {
     flex: 1;
-    padding: 14px 10px;
+    padding: 18px 12px 14px;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
     overflow-y: auto;
+}
+
+.nav-section-title {
+    margin: 8px 10px 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
 }
 
 .nav-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
+    gap: 11px;
+    padding: 11px 13px;
     border-radius: var(--radius-sm);
     color: var(--text-dim);
     text-decoration: none;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 500;
     transition: var(--transition);
+    border: 1px solid transparent;
+    position: relative;
 }
 
 .nav-item:hover {
-    background: var(--orange-soft);
+    background: rgba(255, 237, 213, 0.74);
     color: var(--orange-dark);
+    border-color: rgba(249, 115, 22, 0.2);
+    transform: translateX(2px);
 }
 
 .nav-item.active {
-    background: var(--orange-soft);
+    background: rgba(255, 237, 213, 0.92);
     color: var(--orange-dark);
     font-weight: 600;
+    border-color: rgba(249, 115, 22, 0.28);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45), 0 8px 16px rgba(249, 115, 22, 0.12);
+}
+
+.nav-item.active::before {
+    content: "";
+    position: absolute;
+    left: -4px;
+    top: 22%;
+    width: 3px;
+    height: 56%;
+    border-radius: var(--radius-pill);
+    background: var(--orange);
 }
 
 .nav-icon {
-    width: 20px;
-    height: 20px;
+    width: 26px;
+    height: 26px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    font-size: 16px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.62);
+    border: 1px solid rgba(148, 158, 185, 0.28);
 }
 
 /* SVG nav icons */
 .nav-icon svg {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     stroke: currentColor;
     fill: none;
     stroke-width: 1.8;
@@ -209,24 +238,25 @@ h3 {
 }
 
 .sidebar-footer {
-    padding: 12px 10px;
+    padding: 14px 12px;
     border-top: 1px solid var(--border);
 }
 
 .user-info {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    margin-bottom: 4px;
+    gap: 11px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
     border-radius: var(--radius-sm);
-    background: var(--surface2);
+    background: rgba(232, 235, 241, 0.62);
+    border: 1px solid rgba(148, 158, 185, 0.22);
 }
 
 .user-avatar {
     width: 34px;
     height: 34px;
-    background: linear-gradient(135deg, var(--orange), var(--amber));
+    background: var(--orange);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -242,7 +272,7 @@ h3 {
 }
 
 .user-name {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--text);
     display: block;
@@ -252,10 +282,46 @@ h3 {
 }
 
 .user-badge {
-    font-size: 10px;
+    font-size: 11px;
     color: var(--success);
-    display: block;
-    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.user-badge svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 2.4;
+    flex-shrink: 0;
+}
+
+.user-badge.pending {
+    color: #b45309;
+}
+
+.user-badge-link {
+    display: inline-block;
+    margin-top: 2px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--orange-dark);
+    text-decoration: none;
+}
+
+.user-badge-link:hover {
+    text-decoration: underline;
+}
+
+.nav-button {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font: inherit;
 }
 
 .logout {
@@ -271,7 +337,7 @@ h3 {
    MAIN CONTENT
 ══════════════════════════════════════════════════════════════ */
 .main-content {
-    margin-left: 248px;
+    margin-left: var(--sidebar-width);
     flex: 1;
     padding: 0;
     min-height: 100vh;
@@ -1604,6 +1670,7 @@ h3 {
 ══════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
     .sidebar {
+        width: 248px;
         transform: translateX(-100%);
         transition: transform 0.3s ease;
     }
