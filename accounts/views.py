@@ -6,6 +6,7 @@ import base64
 import hashlib
 
 import qrcode
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -27,6 +28,13 @@ MAX_OTP_FAILS_IP = 20
 TRUSTED_DEVICE_COOKIE = 'trusted_device_2fa'
 TRUSTED_DEVICE_SALT = 'accounts.trusted_device_2fa'
 TRUSTED_DEVICE_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
+
+
+def _login_context(username: str = '') -> dict:
+    return {
+        'username': username,
+        'google_oauth_enabled': bool(getattr(settings, 'GOOGLE_OAUTH_ENABLED', False)),
+    }
 
 
 def _client_ip(request):
@@ -188,14 +196,14 @@ def login_view(request):
 
         if _is_locked('pwd_user', user_key) or _is_locked('pwd_ip', ip):
             messages.error(request, 'Too many login attempts. Try again in 15 minutes.')
-            return render(request, 'accounts/login.html', {'username': username})
+            return render(request, 'accounts/login.html', _login_context(username))
 
         user = authenticate(request, username=username, password=password)
         if user is None:
             _register_failure('pwd_user', user_key, MAX_PASSWORD_FAILS_USER)
             _register_failure('pwd_ip', ip, MAX_PASSWORD_FAILS_IP)
             messages.error(request, 'Invalid username or password.')
-            return render(request, 'accounts/login.html')
+            return render(request, 'accounts/login.html', _login_context(username))
 
         _clear_failures('pwd_user', user_key)
         _clear_failures('pwd_ip', ip)
@@ -222,7 +230,7 @@ def login_view(request):
 
         return response
 
-    return render(request, 'accounts/login.html')
+    return render(request, 'accounts/login.html', _login_context())
 
 
 @login_required

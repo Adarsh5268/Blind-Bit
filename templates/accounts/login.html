@@ -35,9 +35,11 @@
         <div class="form-separator">
             <span>or</span>
         </div>
+        {% if google_oauth_enabled %}
         <a href="{% provider_login_url 'google' process='login' %}" class="btn btn-ghost btn-full" style="margin-bottom:10px;">
             Continue with Google
         </a>
+        {% endif %}
         <div style="text-align: center;">
             <a href="{% url 'register' %}" class="btn btn-ghost btn-full">Create Account</a>
         </div>
