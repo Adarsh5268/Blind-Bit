@@ -214,6 +214,7 @@ def _query_terms_for_preview(query: str):
     primary = preprocess(query)
     terms = [t.lower() for t in primary if t]
     seen = set(terms)
+    # Add a fallback pass so unusual symbols/short forms can still be considered.
     for raw in query.split():
         token = raw.strip()
         if not token:
@@ -222,9 +223,11 @@ def _query_terms_for_preview(query: str):
             token = token[1:]
         token = token.strip('"').replace('*', '')
         token = re.sub(r'[^\w-]', '', token, flags=re.UNICODE)
-        if len(token) >= 2:
-            terms.append(token.lower())
-    return list(dict.fromkeys(terms))
+        token = token.lower()
+        if len(token) >= 2 and token not in seen:
+            terms.append(token)
+            seen.add(token)
+    return terms
 
 
 def _preview_around_match(full_text: str, terms, width: int = 400) -> str:
