@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load socialaccount %}
 {% block title %}Sign In{% endblock %}
 
 {% block auth_content %}
@@ -34,6 +35,9 @@
         <div class="form-separator">
             <span>or</span>
         </div>
+        <a href="{% provider_login_url 'google' process='login' %}" class="btn btn-ghost btn-full" style="margin-bottom:10px;">
+            Continue with Google
+        </a>
         <div style="text-align: center;">
             <a href="{% url 'register' %}" class="btn btn-ghost btn-full">Create Account</a>
         </div>
