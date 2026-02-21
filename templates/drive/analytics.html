@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Analytics{% endblock %}
+{% block page_title %}Search Analytics{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h3 class="card-title">Search History</h3>
+    {% if searches %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Mode</th>
+                <th>Logic</th>
+                <th>Tokens</th>
+                <th>Results</th>
+                <th>Time (ms)</th>
+                <th>When</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in searches %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td><span class="chip chip-{{ s.search_type }}">{{ s.search_type }}</span></td>
+                <td>{{ s.logic_mode }}</td>
+                <td>{{ s.token_count }}</td>
+                <td>{{ s.result_count }}</td>
+                <td>{{ s.duration_ms|floatformat:1 }}</td>
+                <td>{{ s.created_at|timesince }} ago</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">📈</div>
+        <h3>No searches yet</h3>
+        <p>Search for encrypted data to see analytics here</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
