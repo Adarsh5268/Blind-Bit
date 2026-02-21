@@ -178,8 +178,9 @@ async function submitShare() {
 
     if (!username) {
         statusEl.style.display = 'block';
-        statusEl.style.background = 'var(--error-soft, #fde8e8)';
-        statusEl.style.color = 'var(--error, #c0392b)';
+        statusEl.style.background = 'var(--error-soft)';
+        statusEl.style.color = 'var(--error)';
+        statusEl.style.borderColor = 'var(--error)';
         statusEl.textContent = 'Please enter a username.';
         return;
     }
@@ -208,8 +209,9 @@ async function submitShare() {
             statusEl.textContent = d.error || 'Share failed';
         } else {
             statusEl.style.display = 'block';
-            statusEl.style.background = 'var(--green-soft, #e8f8e8)';
-            statusEl.style.color = 'var(--green-dark, #27ae60)';
+            statusEl.style.background = 'var(--success-soft)';
+            statusEl.style.color = 'var(--success)';
+            statusEl.style.borderColor = 'var(--success)';
             statusEl.textContent = `File shared with ${username}!`;
             document.getElementById('share-username').value = '';
             loadShareList(fileId);

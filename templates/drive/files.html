@@ -43,7 +43,8 @@
             </svg></div>
         <div class="file-info">
             <span class="file-name">{{ f.filename }}</span>
-            <span class="file-meta">{{ f.uploaded_at|date:"M d, H:i" }} · {{ f.encrypted_data|length|filesizeformat }}</span>
+            <span class="file-meta">{{ f.uploaded_at|date:"M d, H:i" }} · {{ f.encrypted_data|length|filesizeformat
+                }}</span>
         </div>
         <div class="file-actions">
             <button class="btn btn-sm btn-ghost-orange"
@@ -105,25 +106,25 @@
 </div>
 <!-- Share Modal -->
 <div id="share-modal" class="modal"
-    style="display:none;position:fixed;inset:0;z-index:100;background:rgba(26,22,18,0.5);align-items:center;justify-content:center;padding:20px;">
+    style="display:none;position:fixed;inset:0;z-index:100;background:rgba(34,37,46,0.35);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;">
     <div class="modal-content"
-        style="background:var(--bg2);border-radius:var(--radius);padding:28px;max-width:480px;width:100%;box-shadow:var(--shadow-lg);border:1px solid var(--border);">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-            <h3 style="font-family:'DM Serif Display',serif;font-size:18px;font-weight:400;">Share File</h3>
+        style="background:var(--bg-base);border-radius:var(--radius);padding:32px 36px;max-width:480px;width:100%;box-shadow:var(--shadow-lg);border:1px solid var(--border);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <h3
+                style="font-family:'Fraunces',serif;font-size:20px;font-weight:400;color:var(--text);letter-spacing:-0.02em;">
+                Share File</h3>
             <button onclick="closeShareModal()"
-                style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-dim);">&times;</button>
+                style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted);line-height:1;">&times;</button>
         </div>
-        <p id="share-filename" style="color:var(--text-dim);font-size:13px;margin-bottom:16px;"></p>
+        <p id="share-filename" style="color:var(--text-dim);font-size:13px;margin-bottom:18px;"></p>
         <input type="hidden" id="share-file-id" value="">
-        <div style="margin-bottom:16px;">
-            <label for="share-username"
-                style="display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:var(--text);">Recipient
-                Username</label>
-            <input type="text" id="share-username" placeholder="Enter username..."
-                style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;">
+        <div class="form-group" style="margin-bottom:18px;">
+            <label for="share-username">Recipient Username</label>
+            <input type="text" id="share-username" placeholder="Enter username...">
         </div>
         <div id="share-status"
-            style="display:none;padding:10px;border-radius:var(--radius-sm);margin-bottom:12px;font-size:13px;"></div>
+            style="display:none;padding:10px 14px;border-radius:14px;margin-bottom:14px;font-size:13px;font-weight:600;border:1px solid transparent;">
+        </div>
         <div style="display:flex;gap:10px;justify-content:flex-end;">
             <button class="btn btn-ghost" onclick="closeShareModal()">Cancel</button>
             <button class="btn btn-orange" id="share-submit-btn" onclick="submitShare()">Share</button>
@@ -131,8 +132,10 @@
 
         <!-- Shared With List -->
         <div id="share-list-section"
-            style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;display:none;">
-            <h4 style="font-size:14px;font-weight:500;margin-bottom:10px;color:var(--text);">Currently shared with</h4>
+            style="margin-top:22px;border-top:1px solid var(--border);padding-top:18px;display:none;">
+            <h4
+                style="font-family:'Manrope',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:10px;color:var(--text-muted);">
+                Currently shared with</h4>
             <div id="share-list" style="font-size:13px;color:var(--text-dim);"></div>
         </div>
     </div>
