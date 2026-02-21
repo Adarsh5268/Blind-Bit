@@ -210,7 +210,10 @@ def parse_query(query):
 
 def _query_terms_for_preview(query: str):
     """Extract searchable terms from query for preview snippet selection."""
-    terms = []
+    # Prioritize the same normalized terms used by index/search tokenization.
+    primary = preprocess(query)
+    terms = [t.lower() for t in primary if t]
+    seen = set(terms)
     for raw in query.split():
         token = raw.strip()
         if not token:
