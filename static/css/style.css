@@ -55,6 +55,7 @@
     --radius-pill: 9999px;
 
     --transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    --app-header-height: 80px;
 }
 
 * {
@@ -121,7 +122,8 @@ h3 {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 22px 20px 18px;
+    height: var(--app-header-height);
+    padding: 0 20px;
     border-bottom: 1px solid var(--border);
 }
 
@@ -280,7 +282,8 @@ h3 {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 32px;
+    height: var(--app-header-height);
+    padding: 0 32px;
     border-bottom: 1px solid var(--border);
     background: rgba(244, 245, 248, 0.84);
     backdrop-filter: blur(12px);
@@ -1642,5 +1645,166 @@ h3 {
     .banner-content {
         flex-direction: column;
         text-align: center;
+    }
+}
+/* Security Control Panel */
+.control-status {
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    border: 1px solid var(--border);
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.control-status-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
+
+.control-status-text {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.status-green {
+    background: var(--success-soft);
+    border-color: rgba(16, 185, 129, 0.35);
+}
+
+.status-yellow {
+    background: var(--warn-soft);
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+.status-red {
+    background: var(--error-soft);
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
+.status-pill {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 6px 10px;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.action-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+}
+
+.health-list {
+    display: grid;
+    gap: 10px;
+}
+
+.health-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 8px;
+}
+
+.health-row span {
+    color: var(--text-dim);
+    font-size: 13px;
+}
+
+.health-row strong {
+    color: var(--text);
+    font-size: 13px;
+    text-align: right;
+}
+
+.search-state {
+    font-size: 22px;
+    font-family: 'Fraunces', serif;
+    margin-bottom: 10px;
+}
+
+.search-disabled {
+    color: var(--error);
+}
+
+.search-partial {
+    color: var(--warn);
+}
+
+.search-full {
+    color: var(--success);
+}
+
+.search-help {
+    color: var(--text-dim);
+    margin-bottom: 14px;
+}
+
+.control-stats-grid .stat-card {
+    min-height: 130px;
+}
+
+.crypto-details {
+    margin-bottom: 0;
+}
+
+.crypto-summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.crypto-summary::-webkit-details-marker {
+    color: var(--text-dim);
+}
+
+.crypto-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 14px;
+}
+
+.crypto-grid h4 {
+    margin-bottom: 8px;
+    font-size: 15px;
+}
+
+.crypto-list {
+    padding-left: 18px;
+    color: var(--text-dim);
+    line-height: 1.8;
+}
+
+@media (max-width: 900px) {
+    .crypto-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .control-status {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .health-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .health-row strong {
+        text-align: left;
     }
 }
