@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+{% if not is_2fa_enabled %}
+<div class="twofa-banner">
+    <div class="banner-content">
+        <div class="banner-icon">🛡️</div>
+        <div class="banner-text">
+            <strong>Two-Factor Authentication is not enabled</strong>
+            <p>2FA is required to encrypt, decrypt, and search your data. Your TOTP secret is cryptographically bound to
+                your encryption keys.</p>
+        </div>
+        <a href="{% url 'setup_2fa' %}" class="btn btn-primary">Enable 2FA Now</a>
+    </div>
+</div>
+{% endif %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ file_count }}</div>
+        <div class="stat-label">Encrypted Files</div>
+        <div class="stat-icon">📁</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ record_count }}</div>
+        <div class="stat-label">Encrypted Records</div>
+        <div class="stat-icon">📝</div>
+    </div>
+    <div class="stat-card accent">
+        <div class="stat-value">{{ total_tokens }}</div>
+        <div class="stat-label">Search Tokens</div>
+        <div class="stat-icon">🔑</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ r_tokens }}</div>
+        <div class="stat-label">Record Tokens</div>
+        <div class="stat-icon">📊</div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <h3 class="card-title">Token Distribution</h3>
+        <div class="token-bars">
+            <div class="token-bar-row">
+                <span class="token-label">Keyword (K)</span>
+                <div class="token-bar">
+                    <div class="token-bar-fill keyword" style="width:{% widthratio k_tokens total_tokens 100 %}%"></div>
+                </div>
+                <span class="token-count">{{ k_tokens }}</span>
+            </div>
+            <div class="token-bar-row">
+                <span class="token-label">N-gram (N)</span>
+                <div class="token-bar">
+                    <div class="token-bar-fill ngram" style="width:{% widthratio n_tokens total_tokens 100 %}%"></div>
+                </div>
+                <span class="token-count">{{ n_tokens }}</span>
+            </div>
+            <div class="token-bar-row">
+                <span class="token-label">Bigram (B)</span>
+                <div class="token-bar">
+                    <div class="token-bar-fill bigram" style="width:{% widthratio b_tokens total_tokens 100 %}%"></div>
+                </div>
+                <span class="token-count">{{ b_tokens }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 class="card-title">Key Derivation Hierarchy</h3>
+        <div class="key-tree">
+            <div class="key-node root">
+                <span>🔐 Password + TOTP Secret</span>
+            </div>
+            <div class="key-arrow">↓ HKDF-SHA256</div>
+            <div class="key-node master">
+                <span>🗝️ Master Key (256-bit)</span>
+            </div>
+            <div class="key-branches">
+                <div class="key-node leaf"><span>🔒 File Encryption</span><small>AES-256-GCM</small></div>
+                <div class="key-node leaf"><span>🏷️ HMAC Tokens</span><small>HMAC-SHA256</small></div>
+                <div class="key-node leaf"><span>🎲 Randomization</span><small>Forward Privacy</small></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if recent_searches %}
+<div class="card">
+    <h3 class="card-title">Recent Searches</h3>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Mode</th>
+                <th>Logic</th>
+                <th>Tokens</th>
+                <th>Results</th>
+                <th>Time</th>
+                <th>When</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in recent_searches %}
+            <tr>
+                <td><span class="chip chip-{{ s.search_type }}">{{ s.search_type }}</span></td>
+                <td>{{ s.logic_mode }}</td>
+                <td>{{ s.token_count }}</td>
+                <td>{{ s.result_count }}</td>
+                <td>{{ s.duration_ms|floatformat:1 }}ms</td>
+                <td>{{ s.created_at|timesince }} ago</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

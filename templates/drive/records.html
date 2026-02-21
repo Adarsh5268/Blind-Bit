@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Records{% endblock %}
+{% block page_title %}Encrypted Records{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h3 class="card-title">Add New Record</h3>
+    <div class="record-type-toggle">
+        <button class="type-btn active" data-type="json" onclick="setRecordType('json')">JSON</button>
+        <button class="type-btn" data-type="text" onclick="setRecordType('text')">Text</button>
+    </div>
+    <textarea id="record-input" class="record-textarea" rows="6"
+        placeholder='{"patient": "John", "diagnosis": "diabetes", "date": "2024-01-15"}'></textarea>
+    <div class="record-actions">
+        <button class="btn btn-primary" onclick="uploadRecord()">Encrypt & Store</button>
+        <button class="btn btn-ghost" onclick="loadRecordSample()">Load Sample</button>
+    </div>
+    <div id="record-status" class="upload-status" style="display:none"></div>
+</div>
+
+<h2 class="section-title">Stored Records ({{ records.count }})</h2>
+<div class="files-grid" id="records-grid">
+    {% for r in records %}
+    <div class="file-card record-card" id="rec-{{ r.record_id }}">
+        <div class="file-icon">{% if r.record_type == 'json' %}{ }{% else %}📄{% endif %}</div>
+        <div class="file-info">
+            <span class="file-name">{{ r.record_type|upper }} Record</span>
+            <span class="file-meta">{{ r.uploaded_at|date:"M d, H:i" }}</span>
+        </div>
+        <div class="file-actions">
+            <button class="btn btn-sm btn-accent" onclick="viewRecord('{{ r.record_id }}')">View</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteRecord('{{ r.record_id }}')">Delete</button>
+        </div>
+    </div>
+    {% empty %}
+    <div class="empty-state">
+        <div class="empty-icon">📝</div>
+        <h3>No records yet</h3>
+        <p>Add a JSON or text record above</p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Record Viewer Modal -->
+<div id="record-modal" class="modal" style="display:none">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Decrypted Record</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <pre id="record-content" class="code-block"></pre>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const CSRF = '{{ csrf_token }}';
+    let recordType = 'json';
+    const jsonSample = JSON.stringify({ patient: "John Smith", age: 45, diagnosis: "Type 2 Diabetes", medications: ["Metformin 500mg", "Lisinopril 10mg"], lab_results: { hba1c: 7.2, blood_pressure: "140/90" }, next_appointment: "2024-04-15" }, null, 2);
+    const textSample = "Patient: John Smith\nDOB: 1979-03-22\nDiagnosis: Type 2 Diabetes, Hypertension\nPrescriptions: Metformin 500mg, Lisinopril 10mg\nNotes: Follow up in 3 months, monitor HbA1c levels.";
+
+    function setRecordType(type) {
+        recordType = type;
+        document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+        document.getElementById('record-input').placeholder = type === 'json' ? '{"key":"value"}' : 'Enter plain text...';
+    }
+    function loadRecordSample() { document.getElementById('record-input').value = recordType === 'json' ? jsonSample : textSample; }
+    async function uploadRecord() {
+        const content = document.getElementById('record-input').value.trim();
+        if (!content) return;
+        const st = document.getElementById('record-status');
+        st.style.display = 'block'; st.innerHTML = '<div class="spinner"></div>Encrypting...';
+        try {
+            const r = await fetch('/records/upload/', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF }, body: JSON.stringify({ content, type: recordType }) });
+            const d = await r.json();
+            if (d.error) { st.innerHTML = `<span class="error">${d.error}</span>`; return; }
+            st.innerHTML = `<span class="success">✓ Stored! ID: ${d.record_id.substring(0, 16)}... | Tokens: K=${d.tokens.K} N=${d.tokens.N} B=${d.tokens.B}</span>`;
+            setTimeout(() => location.reload(), 1500);
+        } catch (e) { st.innerHTML = `<span class="error">${e.message}</span>`; }
+    }
+    async function viewRecord(rid) {
+        try {
+            const r = await fetch(`/records/view/${rid}/`); const d = await r.json();
+            if (!r.ok || d.error) { alert(d.error || 'Failed to view record'); return; }
+            document.getElementById('record-content').textContent = d.content;
+            document.getElementById('record-modal').style.display = 'flex';
+        } catch (e) { alert(e.message); }
+    }
+    async function deleteRecord(rid) {
+        if (!confirm('Delete this record?')) return;
+        const r = await fetch(`/records/delete/${rid}/`, { method: 'POST', headers: { 'X-CSRFToken': CSRF } });
+        const d = await r.json();
+        if (!r.ok || d.error) { alert(d.error || 'Delete failed'); return; }
+        document.getElementById('rec-' + rid)?.remove();
+    }
+    function closeModal() { document.getElementById('record-modal').style.display = 'none'; }
+</script>
+{% endblock %}

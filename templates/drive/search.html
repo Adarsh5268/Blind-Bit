@@ -1,0 +1,429 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Search{% endblock %}
+{% block page_title %}Encrypted Search{% endblock %}
+
+{% block content %}
+<div class="card search-container">
+    <div class="search-bar-wrapper">
+        <input type="text" id="search-input" class="search-input-lg" placeholder="Search encrypted files & records..."
+            autocomplete="off" autofocus>
+        <button class="btn btn-primary btn-lg" onclick="doSearch()">
+            <span class="icon">🔍</span> Search
+        </button>
+    </div>
+
+    <div class="search-options-toggle">
+        <button class="btn-text" onclick="toggleAdvanced()" id="adv-toggle">
+            <span>⚙️ Advanced Filters</span>
+            <span class="arrow">▼</span>
+        </button>
+    </div>
+
+    <div id="advanced-filters" class="advanced-filters" style="display:none">
+        <div class="filter-group">
+            <label>Search Logic:</label>
+            <div class="logic-toggle">
+                <button class="logic-btn active" data-logic="AND" title="Matches ALL terms (Default)">AND</button>
+                <button class="logic-btn" data-logic="OR" title="Matches ANY term">OR</button>
+            </div>
+            <small class="logic-help">
+                <strong>AND</strong> = narrower search (all words required). Example: <code>invoice AND paid</code>.<br>
+                <strong>OR</strong> = broader search (any word can match). Example: <code>invoice OR receipt</code>.
+            </small>
+        </div>
+        <div class="filter-group">
+            <label>Match Mode:</label>
+            <div class="search-modes">
+                <button class="mode-chip active" data-mode="exact" data-label="Exact" data-desc="Finds direct keyword matches." data-example="Example: invoice paid" title="Recommended default mode">Exact (Recommended)</button>
+                <button class="mode-chip" data-mode="substring" data-label="Contains" data-desc="Matches when your text appears inside larger words or strings." data-example="Example: plan finds planning" title="Contains part of a word">Contains</button>
+                <button class="mode-chip" data-mode="phrase" data-label="Phrase" data-desc="Looks for words together in order as a phrase." data-example="Example: \"annual report\"">Phrase</button>
+                <button class="mode-chip" data-mode="wildcard" data-label="Wildcard" data-desc="Use * as a placeholder for unknown characters." data-example="Examples: inv* , *report , fin*2025">Wildcard (*)</button>
+                <button class="mode-chip" data-mode="fuzzy" data-label="Fuzzy" data-desc="Finds close spellings and small typos." data-example="Example: reciept can match receipt">Fuzzy (typos)</button>
+                <button class="mode-chip regex" data-mode="regex" data-label="Regex" data-desc="Advanced pattern matching using regular expressions." data-example="Example: inv(ice|oice)\\s+\\d+" title="Advanced users">Regex (Advanced)</button>
+            </div>
+            <div id="mode-explainer" class="mode-explainer" aria-live="polite"></div>
+        </div>
+        <div class="search-tips">
+            <small>
+                <strong>Tips:</strong> Use <code>+term</code> to always require, <code>-term</code> to always exclude.
+                Unmarked terms follow the selected <strong>AND/OR</strong> logic. Default is <strong>AND</strong>.
+            </small>
+        </div>
+    </div>
+</div>
+
+<!-- Status -->
+<div id="search-status" class="search-status" style="display:none"></div>
+
+<!-- Regex Analysis -->
+<div id="regex-info" class="card regex-info" style="display:none">
+    <h4>Regex Analysis</h4>
+    <div id="regex-details"></div>
+</div>
+
+<!-- Results -->
+<div id="search-results" class="results-area"></div>
+
+<style>
+    /* Inline styles for search improvements */
+    .search-container {
+        padding: 2rem;
+    }
+
+    .search-input-lg {
+        flex: 1;
+        padding: 12px 16px;
+        font-size: 1.1rem;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        color: #fff;
+        outline: none;
+        margin-right: 10px;
+        transition: border-color 0.2s;
+    }
+
+    .search-input-lg:focus {
+        border-color: var(--primary);
+    }
+
+    .btn-lg {
+        padding: 12px 24px;
+        font-size: 1rem;
+    }
+
+    .search-options-toggle {
+        margin-top: 10px;
+        text-align: left;
+    }
+
+    .btn-text {
+        background: none;
+        border: none;
+        color: #aaa;
+        cursor: pointer;
+        font-size: 0.9rem;
+        padding: 5px 0;
+    }
+
+    .btn-text:hover {
+        color: #fff;
+    }
+
+    .arrow {
+        display: inline-block;
+        transition: transform 0.2s;
+        font-size: 0.8rem;
+        margin-left: 5px;
+    }
+
+    .arrow.open {
+        transform: rotate(180deg);
+    }
+
+    .advanced-filters {
+        margin-top: 15px;
+        padding: 15px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .filter-group {
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .filter-group label {
+        color: #888;
+        font-size: 0.9rem;
+        min-width: 80px;
+    }
+
+    .logic-help {
+        color: #98a3c7;
+        font-size: 0.8rem;
+        line-height: 1.45;
+        flex-basis: 100%;
+        margin-left: 95px;
+    }
+
+    @media (max-width: 720px) {
+        .logic-help {
+            margin-left: 0;
+        }
+    }
+
+    .mode-explainer {
+        color: #9aa7cf;
+        font-size: 0.82rem;
+        line-height: 1.45;
+        flex-basis: 100%;
+        margin-left: 95px;
+        margin-top: 2px;
+        padding: 8px 10px;
+        border: 1px solid rgba(115, 140, 200, 0.25);
+        border-radius: 8px;
+        background: rgba(35, 47, 84, 0.28);
+    }
+
+    .mode-explainer .mode-title {
+        color: #d2dcff;
+        font-weight: 600;
+        margin-right: 6px;
+    }
+
+    .mode-explainer .mode-example {
+        color: #b8c6f2;
+    }
+
+    @media (max-width: 720px) {
+        .mode-explainer {
+            margin-left: 0;
+        }
+    }
+
+    /* Result Cards */
+    .result-card {
+        background: #1e1e1e;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 12px;
+        transition: transform 0.1s, box-shadow 0.1s;
+    }
+
+    .result-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        border-color: #444;
+    }
+
+    .result-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+
+    .result-badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        margin-right: 10px;
+        text-transform: uppercase;
+    }
+
+    .type-file {
+        background: rgba(52, 152, 219, 0.2);
+        color: #3498db;
+    }
+
+    .type-record {
+        background: rgba(155, 89, 182, 0.2);
+        color: #9b59b6;
+    }
+
+    .result-title {
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: #eee;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .result-meta {
+        font-size: 0.8rem;
+        color: #666;
+        margin-left: 10px;
+    }
+
+    .result-preview {
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 6px;
+        font-family: 'Consolas', monospace;
+        font-size: 0.9rem;
+        color: #ccc;
+        line-height: 1.5;
+    }
+
+    mark {
+        background: rgba(241, 196, 15, 0.3);
+        color: #f1c40f;
+        padding: 0 2px;
+        border-radius: 2px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const CSRF = '{{ csrf_token }}';
+    const SEARCH_API_URL = '{% url "search_api" %}';
+    let currentMode = 'exact';
+    let currentLogic = 'AND'; // Default changed to AND
+
+    function toggleAdvanced() {
+        const pan = document.getElementById('advanced-filters');
+        const arrow = document.querySelector('#adv-toggle .arrow');
+        if (pan.style.display === 'none') {
+            pan.style.display = 'block';
+            arrow.classList.add('open');
+        } else {
+            pan.style.display = 'none';
+            arrow.classList.remove('open');
+        }
+    }
+
+    document.querySelectorAll('.mode-chip').forEach(c => {
+        c.addEventListener('click', () => {
+            document.querySelectorAll('.mode-chip').forEach(x => x.classList.remove('active'));
+            c.classList.add('active');
+            currentMode = c.dataset.mode;
+            renderModeExplainer(c);
+        });
+    });
+
+    document.querySelectorAll('.logic-btn').forEach(b => {
+        b.addEventListener('click', () => {
+            document.querySelectorAll('.logic-btn').forEach(x => x.classList.remove('active'));
+            b.classList.add('active');
+            currentLogic = b.dataset.logic;
+        });
+    });
+
+    document.getElementById('search-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter') doSearch();
+    });
+
+    function renderModeExplainer(modeBtn) {
+        const box = document.getElementById('mode-explainer');
+        if (!box || !modeBtn) return;
+        const label = modeBtn.dataset.label || modeBtn.textContent.trim();
+        const desc = modeBtn.dataset.desc || '';
+        const example = modeBtn.dataset.example || '';
+        box.innerHTML = `
+            <span class="mode-title">${escHtml(label)}:</span>${escHtml(desc)}
+            ${example ? `<br><span class="mode-example">${escHtml(example)}</span>` : ''}
+        `;
+    }
+
+    // Initialize explainer for default active mode.
+    renderModeExplainer(document.querySelector('.mode-chip.active'));
+
+    async function doSearch() {
+        const q = document.getElementById('search-input').value.trim();
+        if (!q) return;
+        const status = document.getElementById('search-status');
+        const results = document.getElementById('search-results');
+        const regexInfo = document.getElementById('regex-info');
+        status.textContent = 'Searching...'; status.style.display = 'block';
+        status.className = 'search-status loading';
+        results.innerHTML = ''; regexInfo.style.display = 'none';
+
+        try {
+            const res = await fetch(SEARCH_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+                body: JSON.stringify({ query: q, mode: currentMode, logic: currentLogic })
+            });
+            const data = await res.json();
+            if (!res.ok || data.error) { status.textContent = data.error || 'Search failed'; status.className = 'search-status error'; return; }
+
+            const logicText = currentLogic === 'AND' ? 'matching ALL terms' : 'matching ANY term';
+            status.textContent = `Found ${data.total} result(s) in ${data.search_time}s (${data.search_mode} mode, ${logicText})`;
+            status.className = 'search-status success';
+
+            // Show regex analysis
+            if (data.regex_info) {
+                regexInfo.style.display = 'block';
+                document.getElementById('regex-details').innerHTML = `
+                <div class="regex-frags">
+                    <span class="label">Literal fragments:</span>
+                    ${data.regex_info.fragments.map(f => `<span class="frag-chip">${escHtml(f)}</span>`).join('')}
+                </div>
+                <div class="regex-meta">
+                    <span class="chip chip-${data.regex_info.complexity}">${data.regex_info.complexity}</span>
+                    ${data.regex_info.has_wildcards ? '<span class="chip chip-warn">has wildcards</span>' : ''}
+                </div>
+            `;
+            }
+
+            // Render results
+            if (data.total === 0) {
+                results.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><h3>No results found</h3><p>Try adjusting your keywords or search mode.</p></div>';
+                return;
+            }
+
+            (data.file_results || []).forEach((r, i) => {
+                results.innerHTML += buildFileResult(r, i + 1, q);
+            });
+            (data.record_results || []).forEach((r, i) => {
+                results.innerHTML += buildRecordResult(r, i + data.file_results.length + 1, q);
+            });
+
+        } catch (e) {
+            status.textContent = 'Search failed: ' + e.message;
+            status.className = 'search-status error';
+        }
+    }
+
+    function buildFileResult(r, idx, query) {
+        const regexHtml = r.regex_matches && r.regex_matches.length > 0 ?
+            `<div class="regex-matches"><span class="regex-match-label">Regex matches (${r.regex_matches.length}):</span>
+        ${r.regex_matches.map(m => `<div class="regex-match-item"><span class="match-hl">${escHtml(m.match)}</span><span class="match-ctx">${escHtml(m.context)}</span></div>`).join('')}</div>` : '';
+
+        return `<div class="result-card">
+        <div class="result-header">
+            <div style="display:flex; align-items:center;">
+                <span class="result-badge type-file">FILE</span>
+                <span class="result-title">${escHtml(r.name)}</span>
+            </div>
+            <div style="display:flex; align-items:center;">
+                <span class="result-meta">Score: ${r.score}</span>
+                <a href="/download/${r.id}/" class="btn btn-sm btn-success" style="margin-left:10px;">Download</a>
+            </div>
+        </div>
+        <div class="result-preview">${highlightText(r.preview, query)}</div>
+        ${regexHtml}
+    </div>`;
+    }
+
+    function buildRecordResult(r, idx, query) {
+        return `<div class="result-card">
+        <div class="result-header">
+            <div style="display:flex; align-items:center;">
+                <span class="result-badge type-record">RECORD</span>
+                <span class="result-title">${escHtml(r.id.substring(0, 8))}...</span>
+            </div>
+            <span class="result-meta">Score: ${r.score}</span>
+        </div>
+        <div class="result-preview">${highlightText(r.preview, query)}</div>
+    </div>`;
+    }
+
+    function highlightText(text, query) {
+        if (!text || !query) return escHtml(text);
+        const words = query.toLowerCase().split(/\s+/).filter(w => w.length >= 2);
+        let html = escHtml(text);
+        words.forEach(w => {
+            const re = new RegExp(`(${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            html = html.replace(re, '<mark>$1</mark>');
+        });
+        return html;
+    }
+
+    function escHtml(s) {
+        if (!s) return '';
+        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+</script>
+{% endblock %}
