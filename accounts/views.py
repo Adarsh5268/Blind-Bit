@@ -6,7 +6,6 @@ import base64
 import hashlib
 import pyotp
 import qrcode
-from django.conf import settings
 from django.core import signing
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout, authenticate
