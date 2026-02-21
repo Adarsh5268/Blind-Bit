@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Complete Sign Up" %}{% endblock %}
+
+{% block auth_content %}
+<div class="auth-card">
+    <div class="auth-header">
+        <div class="auth-logo">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+        </div>
+        <h1>{% trans "Complete Sign Up" %}</h1>
+        <p class="auth-subtitle">{% trans "Finish your Google sign-in setup" %}</p>
+    </div>
+
+    <p class="auth-flow-note">
+        {% trans "You are signing in with Google. Confirm your details to continue." %}
+    </p>
+
+    <form method="post" action="{% url 'socialaccount_signup' %}" class="auth-form">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="alert alert-error">
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+        {% endif %}
+
+        {% for field in form %}
+        <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+            <span class="form-hint" style="color: var(--error);">{{ field.errors|join:", " }}</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        {% if redirect_field_value %}
+        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+        {% endif %}
+
+        <button type="submit" class="btn btn-primary btn-full" style="margin-top:4px;">
+            {% trans "Continue" %}
+        </button>
+    </form>
+</div>
+{% endblock %}
