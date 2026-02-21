@@ -1,0 +1,32 @@
+{
+  "027c3443-1692-400e-aae9-47d3b40315c5": {
+    "filename": "crypto.txt",
+    "enc_path": "storage\\027c3443-1692-400e-aae9-47d3b40315c5.enc",
+    "hash": "62600784185d3baaef4f74598d2738dcf9fe8b886924b9103a4988fd51551b7c"
+  },
+  "f043a397-1dd7-41cf-9e8e-79797e07b4cf": {
+    "filename": "search.txt",
+    "enc_path": "storage\\f043a397-1dd7-41cf-9e8e-79797e07b4cf.enc",
+    "hash": "2ef2212aeb9a47fb7b2c25f30a0252ecfa9367127bb9eb452614deca70a83cb7"
+  },
+  "90a0eb40-fa15-4eae-875d-9b12723143c9": {
+    "filename": "security.txt",
+    "enc_path": "storage\\90a0eb40-fa15-4eae-875d-9b12723143c9.enc",
+    "hash": "2913d664ee03593b01381c1c36dde9d9ec640c7a396a9782726935cd5e40c071"
+  },
+  "ad70f3e3-0935-4c0e-aac4-580d4fb67787": {
+    "filename": "crypto.txt",
+    "enc_path": "storage\\ad70f3e3-0935-4c0e-aac4-580d4fb67787.enc",
+    "hash": "aefb132fdc49ceeeb615d2204739bb3ad8dce31aa457eee74a36fcdc0033b7b8"
+  },
+  "ff8222e8-084d-418e-9020-3867f2eac141": {
+    "filename": "search.txt",
+    "enc_path": "storage\\ff8222e8-084d-418e-9020-3867f2eac141.enc",
+    "hash": "5b057996c82bf926118f82736d852016d5253c74470f4939c30b74ea7f6ed2b3"
+  },
+  "3849f341-7e35-49c8-a53a-4cbf5f107ca2": {
+    "filename": "security.txt",
+    "enc_path": "storage\\3849f341-7e35-49c8-a53a-4cbf5f107ca2.enc",
+    "hash": "d3a1df300cbdd150d84671ee8c2812c7a3e46cc5794abdf41b727241907c96c2"
+  }
+}
