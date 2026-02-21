@@ -8,6 +8,7 @@ import time
 import tempfile
 import base64
 import logging
+import re
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
