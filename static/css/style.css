@@ -69,12 +69,7 @@ body {
     line-height: 1.65;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
-    /* Spendora 3-layer global gradient */
-    background:
-        radial-gradient(900px 240px at 50% -70px, rgba(255, 130, 12, 0.58), rgba(255, 130, 12, 0) 70%),
-        radial-gradient(1100px 540px at 50% 230px, rgba(166, 187, 255, 0.48), rgba(166, 187, 255, 0) 72%),
-        linear-gradient(180deg, #e9edf8 0%, #f3f2f3 28%, #efeff2 100%);
-    background-attachment: fixed;
+    background: var(--bg-base);
 }
 
 h1,
