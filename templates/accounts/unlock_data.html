@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Unlock Data{% endblock %}
+
+{% block auth_content %}
+<div class="auth-card">
+    <div class="auth-header">
+        <div class="auth-logo">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+        </div>
+        <h1>Unlock Vault</h1>
+        <p class="auth-subtitle">Enter your data passphrase to decrypt your workspace keys</p>
+    </div>
+
+    {% if is_2fa_enabled %}
+    <p class="auth-flow-note">2FA stays enforced. On a trusted device, OTP may be skipped, but unlock is still required.</p>
+    {% endif %}
+
+    <form method="post" class="auth-form">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="data_passphrase">Data Passphrase</label>
+            <input type="password" name="data_passphrase" id="data_passphrase" required autofocus
+                placeholder="Enter your data passphrase">
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" style="margin-top:4px;">Unlock</button>
+    </form>
+</div>
+{% endblock %}
