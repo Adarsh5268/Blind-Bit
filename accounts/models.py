@@ -1,8 +1,5 @@
 """
-Accounts models — User profile with TOTP 2FA.
-The TOTP secret is cryptographically tied to key derivation:
-  master_key = HKDF(password_hash + totp_secret)
-Without 2FA, data cannot be decrypted.
+Accounts models — user profile, TOTP 2FA, and data-passphrase unlock support.
 """
 import os
 import base64
@@ -26,6 +23,8 @@ class UserProfile(models.Model):
     totp_secret = models.TextField(blank=True, default='')
     is_2fa_enabled = models.BooleanField(default=False)
     recovery_code_hashes = models.TextField(blank=True, default='[]')
+    data_passphrase_hash = models.TextField(blank=True, default='')
+    is_data_passphrase_set = models.BooleanField(default=False)
 
 
     def save(self, *args, **kwargs):
@@ -89,6 +88,30 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.username} (2FA: {'ON' if self.is_2fa_enabled else 'OFF'})"
+
+    def set_data_passphrase(self, passphrase: str):
+        normalized = (passphrase or '').strip()
+        if not normalized:
+            return
+        self.data_passphrase_hash = make_password(normalized)
+        self.is_data_passphrase_set = True
+        self.save(update_fields=['data_passphrase_hash', 'is_data_passphrase_set'])
+
+    def verify_data_passphrase(self, passphrase: str) -> bool:
+        normalized = (passphrase or '').strip()
+        if not normalized:
+            return False
+
+        # Backward-compatibility path for users created before data-passphrase rollout.
+        if not self.is_data_passphrase_set or not self.data_passphrase_hash:
+            return self.user.check_password(normalized)
+        return check_password(normalized, self.data_passphrase_hash)
+
+    def bootstrap_data_passphrase_from_password(self, password: str):
+        if self.is_data_passphrase_set:
+            return
+        if password and self.user.check_password(password):
+            self.set_data_passphrase(password)
 
     def _get_recovery_hashes(self):
         try:
