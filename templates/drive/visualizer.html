@@ -21,41 +21,7 @@
     </div>
 </div>
 
-<div class="mission-grid">
-    <div class="card mission-card">
-        <h3 class="card-title">Mission Tracker</h3>
-        <div class="mission-progress-wrap">
-            <div class="mission-progress-bar" id="mission-progress-bar"></div>
-        </div>
-        <div class="mission-progress-label" id="mission-progress-label">0 / 8 missions complete</div>
 
-        <ul class="mission-list" id="mission-list">
-            <li data-mission="m1"><span>Run first encryption</span><strong>+30</strong></li>
-            <li data-mission="m2"><span>Exact match challenge</span><strong>+25</strong></li>
-            <li data-mission="m3"><span>Prefix match challenge</span><strong>+25</strong></li>
-            <li data-mission="m4"><span>Fuzzy typo recovery</span><strong>+35</strong></li>
-            <li data-mission="m5"><span>Encrypt your own custom text</span><strong>+25</strong></li>
-            <li data-mission="m6"><span>Mistake mode fixed</span><strong>+20</strong></li>
-            <li data-mission="m7"><span>Read leakage checkpoint</span><strong>+20</strong></li>
-            <li data-mission="m8"><span>Complete guided tour</span><strong>+40</strong></li>
-        </ul>
-
-        <div class="challenge-box">
-            <h4>Current Mission</h4>
-            <p id="mission-hint">Load a sample and click Encrypt and Tokenize.</p>
-            <button type="button" class="btn btn-ghost" onclick="focusNextMission()">Focus Next Mission</button>
-        </div>
-
-        <div class="badge-row" id="badge-row"></div>
-    </div>
-
-    <div class="card mission-card mission-log-card">
-        <h3 class="card-title">Mission Log</h3>
-        <div class="mission-log" id="mission-log">
-            <div class="mission-log-line">System ready. Awaiting first action.</div>
-        </div>
-    </div>
-</div>
 
 <div class="compare-grid">
     <div class="card compare-card">
@@ -302,108 +268,7 @@
         color: var(--indigo);
     }
 
-    .mission-grid {
-        margin-top: 14px;
-        display: grid;
-        grid-template-columns: 1.35fr 1fr;
-        gap: 12px;
-    }
 
-    .mission-progress-wrap {
-        height: 10px;
-        border-radius: 99px;
-        background: var(--surface2);
-        border: 1px solid var(--border);
-        overflow: hidden;
-        margin: 6px 0;
-    }
-
-    .mission-progress-bar {
-        height: 100%;
-        width: 0%;
-        background: linear-gradient(90deg, var(--success), var(--indigo));
-        transition: width 0.25s ease;
-    }
-
-    .mission-progress-label {
-        font-size: 12px;
-        color: var(--text-dim);
-        margin-bottom: 10px;
-    }
-
-    .mission-list {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .mission-list li {
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        padding: 8px 10px;
-        display: flex;
-        justify-content: space-between;
-        background: var(--surface2);
-        font-size: 13px;
-    }
-
-    .mission-list li.done {
-        border-color: var(--success);
-        background: var(--success-soft);
-    }
-
-    .challenge-box {
-        margin-top: 10px;
-        border: 1px dashed var(--border);
-        border-radius: var(--radius-sm);
-        padding: 10px;
-    }
-
-    .challenge-box h4 {
-        margin: 0 0 4px;
-    }
-
-    .challenge-box p {
-        margin: 0 0 8px;
-        color: var(--text-dim);
-        font-size: 12px;
-    }
-
-    .badge-row {
-        margin-top: 10px;
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
-
-    .badge {
-        padding: 4px 8px;
-        border-radius: 999px;
-        border: 1px solid var(--success);
-        color: var(--success);
-        background: var(--success-soft);
-        font-size: 11px;
-    }
-
-    .mission-log {
-        max-height: 280px;
-        overflow: auto;
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        background: var(--surface2);
-        padding: 10px;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 12px;
-    }
-
-    .mission-log-line {
-        padding: 4px 0;
-        border-bottom: 1px dotted rgba(0, 0, 0, 0.06);
-        color: var(--text-dim);
-    }
 
     .compare-grid {
         margin-top: 14px;
@@ -753,9 +618,7 @@
             grid-template-columns: 1fr;
         }
 
-        .mission-grid {
-            grid-template-columns: 1fr;
-        }
+
 
         .compare-grid {
             grid-template-columns: 1fr;
@@ -1055,27 +918,13 @@
         game.completed.add(id);
         game.score += missionConfig[id].points;
 
-        const el = document.querySelector('[data-mission="' + id + '"]');
-        if (el) el.classList.add('done');
-
-        logMission(logLine + ' +' + missionConfig[id].points + ' points.');
         updateGamePanel();
         persistProgress();
     }
 
     function updateGamePanel() {
-        const total = Object.keys(missionConfig).length;
-        const completed = game.completed.size;
-        const pct = Math.round((completed / total) * 100);
-
         document.getElementById('mission-score').textContent = String(game.score);
-        document.getElementById('mission-progress-bar').style.width = pct + '%';
-        document.getElementById('mission-progress-label').textContent = completed + ' / ' + total + ' missions complete';
         document.getElementById('mission-rank').textContent = rankForScore(game.score);
-
-        const next = nextMissionId();
-        document.getElementById('mission-hint').textContent = next ? missionConfig[next].hint : 'All missions complete. Use Copy Judge Summary for your demo.';
-        renderBadges();
     }
 
     function rankForScore(score) {
@@ -1093,40 +942,7 @@
         return null;
     }
 
-    function focusNextMission() {
-        const next = nextMissionId();
-        if (!next) {
-            logMission('All missions already complete.');
-            return;
-        }
 
-        if (next === 'm1' || next === 'm5' || next === 'm8') {
-            document.getElementById('step-1').scrollIntoView({ behavior: 'smooth' });
-            document.getElementById('viz-input').focus();
-            return;
-        }
-
-        if (next === 'm7') {
-            document.getElementById('leakage-term').scrollIntoView({ behavior: 'smooth' });
-            return;
-        }
-
-        document.getElementById('step-process').scrollIntoView({ behavior: 'smooth' });
-        document.getElementById('sim-query').focus();
-    }
-
-    function renderBadges() {
-        const row = document.getElementById('badge-row');
-        row.innerHTML = '';
-        Object.keys(badges).map(Number).sort((a, b) => a - b).forEach(threshold => {
-            if (game.score >= threshold) {
-                const span = document.createElement('span');
-                span.className = 'badge';
-                span.textContent = badges[threshold];
-                row.appendChild(span);
-            }
-        });
-    }
 
     function copyJudgeSummary() {
         const text = 'BlindBit SSE summary: encrypted storage, tokenized search, 2FA-gated access, declared leakage (access/search/size/timing), mitigations (lockouts, rate limits, headers, decoys).';
@@ -1135,17 +951,7 @@
         });
     }
 
-    function logMission(text) {
-        const now = new Date();
-        const stamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        const line = document.createElement('div');
-        line.className = 'mission-log-line';
-        line.textContent = '[' + stamp + '] ' + text;
-
-        const log = document.getElementById('mission-log');
-        log.prepend(line);
-        while (log.children.length > 30) log.removeChild(log.lastChild);
-    }
+    function logMission(text) { /* removed */ }
 
     function persistProgress() {
         const data = { score: game.score, completed: Array.from(game.completed), guidedTourDone: game.guidedTourDone };
@@ -1160,13 +966,7 @@
             game.score = Number(data.score || 0);
             game.completed = new Set(Array.isArray(data.completed) ? data.completed : []);
             game.guidedTourDone = Boolean(data.guidedTourDone);
-
-            game.completed.forEach(id => {
-                const el = document.querySelector('[data-mission="' + id + '"]');
-                if (el) el.classList.add('done');
-            });
             updateGamePanel();
-            logMission('Loaded saved playground progress.');
         } catch (_e) {
             localStorage.removeItem(STORAGE_KEY);
         }
@@ -1177,9 +977,7 @@
         game.score = 0;
         game.completed = new Set();
         game.guidedTourDone = false;
-        document.querySelectorAll('.mission-list li').forEach(el => el.classList.remove('done'));
         updateGamePanel();
-        logMission('Progress reset.');
     }
 
     function levenshtein(a, b) {
