@@ -243,9 +243,10 @@ Targets (hackathon baseline):
 
 ## 11. UX Requirements and Product Behavior
 1. Auth UX
-- Clear prompts for when/why 2FA is required
-- Remember-device option with explicit duration
-- Recovery code option visible on login when 2FA challenge is shown
+- Progressive two-step login flow: Step 1 (Username/Password), Step 2 (2FA/Recovery Code if enabled).
+- Clear prompts for when/why 2FA is required on the dedicated second-step page.
+- Remember-device option with explicit duration, accessible during the 2FA challenge.
+- Recovery code option visible on the 2FA challenge page.
 
 2. Recovery UX
 - After recovery login, user must rebind authenticator app before normal use
