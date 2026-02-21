@@ -1,0 +1,117 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BlindBit{% endblock %} — Encrypted Drive</title>
+    <meta name="description" content="BlindBit SSE — Zero-Knowledge Encrypted File Storage with Searchable Encryption">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    {% if user.is_authenticated %}
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon">🔐</div>
+                <span class="brand-text">BlindBit</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="{% url 'dashboard' %}"
+                    class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <span class="nav-icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{% url 'files' %}"
+                    class="nav-item {% if request.resolver_match.url_name == 'files' %}active{% endif %}">
+                    <span class="nav-icon">📁</span>
+                    <span>My Files</span>
+                </a>
+                <a href="{% url 'search' %}"
+                    class="nav-item {% if request.resolver_match.url_name == 'search' %}active{% endif %}">
+                    <span class="nav-icon">🔍</span>
+                    <span>Search</span>
+                </a>
+                <a href="{% url 'records' %}"
+                    class="nav-item {% if request.resolver_match.url_name == 'records' %}active{% endif %}">
+                    <span class="nav-icon">📝</span>
+                    <span>Records</span>
+                </a>
+                <a href="{% url 'visualizer' %}"
+                    class="nav-item {% if request.resolver_match.url_name == 'visualizer' %}active{% endif %}">
+                    <span class="nav-icon">⚡</span>
+                    <span>Visualizer</span>
+                </a>
+                <a href="{% url 'analytics' %}"
+                    class="nav-item {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}">
+                    <span class="nav-icon">📈</span>
+                    <span>Analytics</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">{{ user.username|first|upper }}</div>
+                    <div class="user-details">
+                        <span class="user-name">{{ user.username }}</span>
+                        {% if request.session.is_2fa_verified %}
+                        <span class="user-badge">2FA ✓</span>
+                        {% else %}
+                        <span class="user-badge">2FA Pending</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <form action="{% url 'logout' %}" method="post" id="logout-form">
+                    {% csrf_token %}
+                    <button type="submit" class="nav-item logout"
+                        style="background:none; border:none; color:inherit; font:inherit; cursor:pointer; width:100%; text-align:left;">
+                        <span class="nav-icon">🚪</span>
+                        <span>Logout</span>
+                    </button>
+                </form>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+                <div class="top-actions">
+                    {% block top_actions %}{% endblock %}
+                </div>
+            </header>
+
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="content-area">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+    {% else %}
+    <div class="auth-layout">
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% block auth_content %}{% endblock %}
+    </div>
+    {% endif %}
+
+    <script src="{% static 'js/app.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>
