@@ -278,6 +278,7 @@ def search_api(request):
         return JsonResponse({'error': 'Invalid search mode'}, status=400)
 
     req_terms, opt_terms, neg_terms = parse_query(query)
+    preview_terms = _query_terms_for_preview(query)
 
     t0 = time.perf_counter()
 
