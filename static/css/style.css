@@ -552,6 +552,31 @@ h3 {
     text-decoration: underline;
 }
 
+.form-separator {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 20px 0 16px;
+    color: var(--text-dim);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.form-separator::before,
+.form-separator::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--border);
+}
+
+.form-separator::before {
+    margin-right: 14px;
+}
+
+.form-separator::after {
+    margin-left: 14px;
+}
+
 /* ═══════════════════════════════════════════════════════════
    2FA SETUP (inside app layout — light theme)
 ══════════════════════════════════════════════════════════════ */
