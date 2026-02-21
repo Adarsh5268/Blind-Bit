@@ -85,6 +85,32 @@ class AccountPolicyTests(TestCase):
         # Jumps straight to dashboard
         self.assertRedirects(response3, reverse('dashboard'))
 
+    def test_login_requires_otp_on_new_device_even_if_old_device_was_remembered(self):
+        _, profile = self._create_2fa_user()
+        code = pyotp.TOTP(profile.get_totp_secret()).now()
+
+        # Initial login from first device/user-agent and remember it.
+        self.client.defaults['HTTP_USER_AGENT'] = 'Device-A-UA'
+        response = self.client.post(reverse('login'), {
+            'username': 'alice',
+            'password': 'StrongPassword123'
+        })
+        self.assertRedirects(response, reverse('verify_2fa'))
+        response2 = self.client.post(reverse('verify_2fa'), {
+            'totp_code': code,
+            'remember_device': 'on'
+        })
+        self.assertRedirects(response2, reverse('dashboard'))
+        self.client.post(reverse('logout'))
+
+        # Simulate a new device/user-agent. Trusted cookie should not validate.
+        self.client.defaults['HTTP_USER_AGENT'] = 'Device-B-UA'
+        response3 = self.client.post(reverse('login'), {
+            'username': 'alice',
+            'password': 'StrongPassword123'
+        })
+        self.assertRedirects(response3, reverse('verify_2fa'))
+
     def test_remember_device_cookie_is_not_secure_over_http(self):
         _, profile = self._create_2fa_user()
         code = pyotp.TOTP(profile.get_totp_secret()).now()

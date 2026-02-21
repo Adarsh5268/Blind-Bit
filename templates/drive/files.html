@@ -51,8 +51,7 @@
 </svg></div>
         <div class="file-info">
             <span class="file-name">{{ f.filename }}</span>
-            <span class="file-meta">{{ f.uploaded_at|date:"M d, H:i" }} · {{ f.encrypted_data|length|filesizeformat
-                }}</span>
+            <span class="file-meta">{{ f.uploaded_at|date:"M d, H:i" }} · {{ f.encrypted_data|length|filesizeformat }}</span>
         </div>
         <div class="file-actions">
             <a href="{% url 'download_file' f.file_id %}" class="btn btn-sm btn-ghost-orange">Download</a>
