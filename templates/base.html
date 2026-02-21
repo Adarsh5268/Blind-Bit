@@ -17,7 +17,20 @@
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-brand">
-                <div class="brand-icon">🔐</div>
+                <div class="brand-icon"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+</svg></div>
                 <span class="brand-text">BlindBit</span>
             </div>
             <nav class="sidebar-nav">
@@ -70,7 +83,19 @@
                     <div class="user-details">
                         <span class="user-name">{{ user.username }}</span>
                         {% if request.session.is_2fa_verified %}
-                        <span class="user-badge">2FA ✓ Verified</span>
+                        <span class="user-badge">2FA <svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M20 6 9 17l-5-5" />
+</svg> Verified</span>
                         {% else %}
                         <span class="user-badge" style="color:var(--warn);">2FA Pending</span>
                         {% endif %}

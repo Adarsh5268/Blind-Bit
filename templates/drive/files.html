@@ -36,7 +36,20 @@
 <div class="files-grid" id="files-grid">
     {% for f in files %}
     <div class="file-card" id="file-{{ f.file_id }}">
-        <div class="file-icon">📄</div>
+        <div class="file-icon"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+  <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+</svg></div>
         <div class="file-info">
             <span class="file-name">{{ f.filename }}</span>
             <span class="file-meta">{{ f.uploaded_at|date:"M d, H:i" }} · {{ f.encrypted_data|length|filesizeformat
@@ -50,7 +63,19 @@
     </div>
     {% empty %}
     <div class="empty-state" style="grid-column:1/-1;">
-        <span class="empty-icon">📂</span>
+        <span class="empty-icon"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2" />
+</svg></span>
         <div class="empty-title">No files yet</div>
         <p class="empty-desc">Upload a PDF or TXT file to get started with encrypted storage</p>
         <label for="file-upload" class="btn btn-orange" style="cursor:pointer">Upload Your First File</label>

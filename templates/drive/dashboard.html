@@ -6,7 +6,19 @@
 {% if not is_2fa_enabled %}
 <div class="twofa-banner">
     <div class="banner-content">
-        <div class="banner-icon">🛡️</div>
+        <div class="banner-icon"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+</svg>️</div>
         <div class="banner-text">
             <strong>Two-Factor Authentication is not enabled</strong>
             <p>2FA is required to encrypt, decrypt, and search your data. Your TOTP secret is cryptographically bound to
@@ -20,22 +32,79 @@
     <div class="stat-card">
         <div class="stat-value">{{ file_count }}</div>
         <div class="stat-label">Encrypted Files</div>
-        <div class="stat-icon">📁</div>
+        <div class="stat-icon"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+</svg></div>
     </div>
     <div class="stat-card">
         <div class="stat-value">{{ record_count }}</div>
         <div class="stat-label">Encrypted Records</div>
-        <div class="stat-icon">📝</div>
+        <div class="stat-icon"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+  <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+  <path d="M10 9H8" />
+  <path d="M16 13H8" />
+  <path d="M16 17H8" />
+</svg></div>
     </div>
     <div class="stat-card accent">
         <div class="stat-value">{{ total_tokens }}</div>
         <div class="stat-label">Search Tokens</div>
-        <div class="stat-icon">🔑</div>
+        <div class="stat-icon"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" />
+  <path d="m21 2-9.6 9.6" />
+  <circle cx="7.5" cy="15.5" r="5.5" />
+</svg></div>
     </div>
     <div class="stat-card">
         <div class="stat-value">{{ r_tokens }}</div>
         <div class="stat-label">Record Tokens</div>
-        <div class="stat-icon">📊</div>
+        <div class="stat-icon"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M3 3v16a2 2 0 0 0 2 2h16" />
+  <path d="M7 16h8" />
+  <path d="M7 11h12" />
+  <path d="M7 6h3" />
+</svg></div>
     </div>
 </div>
 
@@ -71,16 +140,86 @@
         <h3 class="card-title">Key Derivation Hierarchy</h3>
         <div class="key-tree">
             <div class="key-node root">
-                <span>🔐 Password + TOTP Secret</span>
+                <span><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+</svg> Password + TOTP Secret</span>
             </div>
             <div class="key-arrow">↓ HKDF-SHA256</div>
             <div class="key-node master">
-                <span>🗝️ Master Key (256-bit)</span>
+                <span><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" />
+  <path d="m21 2-9.6 9.6" />
+  <circle cx="7.5" cy="15.5" r="5.5" />
+</svg>️ Master Key (256-bit)</span>
             </div>
             <div class="key-branches">
-                <div class="key-node leaf"><span>🔒 File Encryption</span><small>AES-256-GCM</small></div>
-                <div class="key-node leaf"><span>🏷️ HMAC Tokens</span><small>HMAC-SHA256</small></div>
-                <div class="key-node leaf"><span>🎲 Randomization</span><small>Forward Privacy</small></div>
+                <div class="key-node leaf"><span><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+</svg> File Encryption</span><small>AES-256-GCM</small></div>
+                <div class="key-node leaf"><span><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" />
+  <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" />
+</svg>️ HMAC Tokens</span><small>HMAC-SHA256</small></div>
+                <div class="key-node leaf"><span><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="12" height="12" x="2" y="10" rx="2" ry="2" />
+  <path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6" />
+  <path d="M6 18h.01" />
+  <path d="M10 14h.01" />
+  <path d="M15 6h.01" />
+  <path d="M18 9h.01" />
+</svg> Randomization</span><small>Forward Privacy</small></div>
             </div>
         </div>
     </div>

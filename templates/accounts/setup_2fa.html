@@ -9,7 +9,21 @@
         <div style="text-align: center; margin-bottom: 24px;">
             <div
                 style="width:56px;height:56px;background:linear-gradient(135deg,var(--orange),var(--amber));border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px;box-shadow:0 4px 16px rgba(249,115,22,0.35);">
-                🔑</div>
+                <svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" />
+  <path d="m21 2-9.6 9.6" />
+  <circle cx="7.5" cy="15.5" r="5.5" />
+</svg></div>
             <h2 style="font-family:'DM Serif Display',serif;font-size:22px;font-weight:400;margin-bottom:6px;">Setup
                 Two-Factor Authentication</h2>
             <p style="color:var(--text-dim);font-size:14px;line-height:1.6;">2FA is <strong>mandatory</strong> — your
@@ -38,7 +52,19 @@
                     <div class="secret-code" id="secret-code">{{ secret }}</div>
                     <div style="display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap;">
                         <button type="button" class="btn btn-ghost btn-sm"
-                            onclick="navigator.clipboard.writeText('{{ secret }}'); this.textContent='✓ Copied!'">
+                            onclick="navigator.clipboard.writeText('{{ secret }}'); this.textContent='<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M20 6 9 17l-5-5" />
+</svg> Copied!'">
                             Copy Secret
                         </button>
                         <form method="post" style="display:inline;">

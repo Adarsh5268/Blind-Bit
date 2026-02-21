@@ -8,7 +8,21 @@
         <div style="text-align: center; margin-bottom: 22px;">
             <div
                 style="width:56px;height:56px;background:linear-gradient(135deg,var(--error),#F87171);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px;">
-                🗝️</div>
+                <svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" />
+  <path d="m21 2-9.6 9.6" />
+  <circle cx="7.5" cy="15.5" r="5.5" />
+</svg>️</div>
             <h2 style="font-family:'DM Serif Display',serif;font-size:22px;font-weight:400;margin-bottom:6px;">Save
                 These Recovery Codes</h2>
             <p style="color:var(--text-dim);font-size:14px;">Each code can only be used once. Store them offline in a
@@ -31,7 +45,21 @@
 
         <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:24px;">
             <button type="button" class="btn btn-ghost" onclick="window.print()">
-                🖨 Print Codes
+                <svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+  <path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6" />
+  <rect x="6" y="14" width="12" height="8" rx="1" />
+</svg> Print Codes
             </button>
             <a href="{% url 'dashboard' %}" class="btn btn-primary">
                 I Have Saved Them →
