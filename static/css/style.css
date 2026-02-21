@@ -1,62 +1,60 @@
 /* ==========================================================================
-   BlindBit — Sarvam.ai Inspired Theme
-   Warm light aesthetic with Indian design heritage
+   BlindBit — Spendora Inspired Premium Theme
+   Precise integration of typography, radial gradients, and UI elements.
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
 
 :root {
-    /* --- Core Palette --- */
-    --bg: #FAF9F7;
-    --bg2: #FFFFFF;
-    --surface: #FFFFFF;
-    --surface2: #F4F3F0;
-    --border: #E8E5DF;
-    --border-warm: #F0D9B5;
+    /* ----- SPENDORA THEME ----- */
+    --bg-base: #f3f2f3;
 
-    /* --- Text --- */
-    --text: #1A1612;
-    --text-dim: #7A7168;
-    --text-muted: #B0A898;
+    --surface: rgba(245, 246, 248, 0.88);
+    --surface2: rgba(220, 222, 230, 0.4);
 
-    /* --- Brand Accents --- */
-    --orange: #F97316;
-    --orange-dark: #EA580C;
-    --orange-soft: #FFF3E8;
-    --amber: #F59E0B;
-    --amber-soft: #FFFBEB;
+    --border: #d8dbe3;
+    --border-warm: #eccdb3;
 
-    /* --- Indigo/Lavender (from sarvam dark hero) --- */
-    --indigo: #6366F1;
-    --indigo-dark: #4338CA;
-    --indigo-soft: #EEF2FF;
-    --purple: #8B5CF6;
-    --purple-soft: #F5F3FF;
+    --text: #22252e;
+    --text-dim: #5f6778;
+    --text-muted: #949eb9;
 
-    /* --- Functional --- */
-    --success: #16A34A;
-    --success-soft: #F0FDF4;
-    --warn: #D97706;
-    --warn-soft: #FFFBEB;
-    --error: #DC2626;
-    --error-soft: #FEF2F2;
-    --cyan: #0891B2;
+    /* VIBRANT BRAND COLORS */
+    --orange: #f97316;
+    --orange-soft: #ffedd5;
+    --orange-dark: #ea580c;
 
-    /* --- UI Tokens --- */
-    --radius: 16px;
-    --radius-sm: 10px;
-    --radius-pill: 100px;
-    --shadow-sm: 0 1px 3px rgba(26, 22, 18, 0.07), 0 1px 2px rgba(26, 22, 18, 0.04);
-    --shadow: 0 4px 16px rgba(26, 22, 18, 0.10), 0 2px 6px rgba(26, 22, 18, 0.06);
-    --shadow-lg: 0 12px 40px rgba(26, 22, 18, 0.14), 0 4px 12px rgba(26, 22, 18, 0.08);
+    --amber: #fbbf24;
+    --amber-soft: #fef3c7;
+
+    --indigo: #6366f1;
+    --indigo-soft: #e0e7ff;
+    --indigo-dark: #4f46e5;
+
+    --cyan: #06b6d4;
+    --cyan-soft: #cffafe;
+
+    /* FUNCTIONAL STATES */
+    --success: #10b981;
+    --success-soft: #d1fae5;
+
+    --error: #ef4444;
+    --error-soft: #fee2e2;
+
+    --warn: #f59e0b;
+    --warn-soft: #fef3c7;
+
+    /* MODERN BLUR SHADOWS */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+    --shadow: 0 8px 30px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.03);
+    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+
+    /* RADII */
+    --radius: 30px;
+    --radius-sm: 16px;
+    --radius-pill: 9999px;
+
     --transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-
-    /* --- Auth Hero colors --- */
-    --hero-from: #0F0C29;
-    --hero-via: #302B63;
-    --hero-to: #24243e;
-    --hero-orange: #F97316;
-    --hero-amber: #FBBF24;
 }
 
 * {
@@ -66,20 +64,25 @@
 }
 
 body {
-    font-family: 'Inter', -apple-system, sans-serif;
-    background: var(--bg);
+    font-family: 'Manrope', -apple-system, sans-serif;
     color: var(--text);
     line-height: 1.65;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
+    /* Spendora 3-layer global gradient */
+    background:
+        radial-gradient(900px 240px at 50% -70px, rgba(255, 130, 12, 0.58), rgba(255, 130, 12, 0) 70%),
+        radial-gradient(1100px 540px at 50% 230px, rgba(166, 187, 255, 0.48), rgba(166, 187, 255, 0) 72%),
+        linear-gradient(180deg, #e9edf8 0%, #f3f2f3 28%, #efeff2 100%);
+    background-attachment: fixed;
 }
 
 h1,
 h2,
 h3 {
-    font-family: 'DM Serif Display', Georgia, serif;
-    font-weight: 400;
-    letter-spacing: -0.01em;
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 500;
+    letter-spacing: -0.02em;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -97,73 +100,19 @@ h3 {
     min-height: 100vh;
     flex-direction: column;
     padding: 20px;
-    /* Dark navy→indigo gradient hero like sarvam.ai */
-    background: linear-gradient(160deg, var(--hero-from) 0%, var(--hero-via) 45%, #3B2D8C 75%, #5E3FA3 100%);
     position: relative;
     overflow: hidden;
 }
 
-/* Decorative globe arc overlay (sarvam.ai hero pattern) */
-.auth-layout::before {
-    content: '';
-    position: absolute;
-    bottom: -10%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 130vw;
-    height: 130vw;
-    max-width: 1200px;
-    max-height: 1200px;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    pointer-events: none;
-}
-
-.auth-layout::after {
-    content: '';
-    position: absolute;
-    bottom: -5%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90vw;
-    height: 90vw;
-    max-width: 900px;
-    max-height: 900px;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    pointer-events: none;
-}
-
-/* Orange warm glow at top of auth hero */
-.auth-layout .hero-glow {
-    position: absolute;
-    top: -60px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 600px;
-    height: 200px;
-    background: radial-gradient(ellipse, rgba(249, 115, 22, 0.35) 0%, rgba(251, 191, 36, 0.15) 50%, transparent 80%);
-    pointer-events: none;
-}
-
-/* Star/flower motif in hero center */
-.hero-star {
-    position: absolute;
-    top: 38%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 36px;
-    height: 36px;
-    opacity: 0.6;
-    pointer-events: none;
-}
+/* Base logo wrapper (no stars/arc/hero glows needed, background handles it natively) */
 
 /* ═══════════════════════════════════════════════════════════
    SIDEBAR
 ══════════════════════════════════════════════════════════════ */
 .sidebar {
     width: 248px;
-    background: var(--bg2);
+    background: rgba(244, 245, 248, 0.84);
+    backdrop-filter: blur(12px);
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
@@ -198,6 +147,57 @@ h3 {
 .brand-icon svg.lucide {
     width: 20px;
     height: 20px;
+}
+
+.brand-text {
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--text);
+    letter-spacing: -0.02em;
+}
+
+.sidebar-nav {
+    flex: 1;
+    padding: 14px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.nav-item:hover {
+    background: var(--orange-soft);
+    color: var(--orange-dark);
+}
+
+.nav-item.active {
+    background: var(--orange-soft);
+    color: var(--orange-dark);
+    font-weight: 600;
+}
+
+.nav-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 16px;
 }
 
 .brand-text {
