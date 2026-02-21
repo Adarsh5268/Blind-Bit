@@ -95,6 +95,11 @@ def files_view(request):
 
 
 @login_required
+def upload_page(request):
+    return render(request, 'drive/upload.html')
+
+
+@login_required
 @require_POST
 def upload_file(request):
     keys = _get_keys(request)
@@ -104,6 +109,7 @@ def upload_file(request):
     uploaded = request.FILES.get('file')
     if not uploaded:
         return JsonResponse({'error': 'No file selected'}, status=400)
+    manual_keyword_input = (request.POST.get('manual_keyword') or '').strip()
 
     ext = os.path.splitext(uploaded.name)[1].lower()
     if ext not in ('.pdf', '.txt'):
@@ -121,6 +127,24 @@ def upload_file(request):
         # Extract text and preprocess
         raw_text = extract_text(tmp_path)
         keywords = preprocess(raw_text)
+
+        manual_keywords = []
+        if manual_keyword_input:
+            # Accept comma-separated values: "alpha, beta key, gamma"
+            for part in manual_keyword_input.split(','):
+                part = part.strip()
+                if part:
+                    manual_keywords.extend(preprocess(part))
+
+        added_manual_keywords = []
+        if manual_keywords:
+            seen = set(keywords)
+            for kw in manual_keywords:
+                if kw not in seen:
+                    keywords.append(kw)
+                    seen.add(kw)
+                    added_manual_keywords.append(kw)
+
         if not keywords:
             return JsonResponse({'error': 'No searchable content found'}, status=400)
 
@@ -153,6 +177,7 @@ def upload_file(request):
             'file_id': file_id,
             'filename': uploaded.name,
             'keywords': len(keywords),
+            'secret_keywords_added': added_manual_keywords,
             'tokens': {'total': len(index_entries), 'K': k, 'N': n, 'B': b},
             'tfidf_top': [{'keyword': kw, 'score': round(sc, 4)} for kw, sc in top_tfidf],
             'encrypt_time': round(enc_time, 4),
