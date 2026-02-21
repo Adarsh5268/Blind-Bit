@@ -199,3 +199,39 @@ class AccountPolicyTests(TestCase):
         page = self.client.get(reverse('recovery_codes'))
         self.assertEqual(page.status_code, 200)
         self.assertContains(page, 'Save These Recovery Codes')
+
+    def test_legacy_password_login_bootstraps_data_passphrase(self):
+        user = User.objects.create_user(username='legacy', password='StrongPassword123')
+        profile = UserProfile.objects.create(user=user, is_2fa_enabled=False)
+        profile.generate_totp_secret()
+
+        response = self.client.post(reverse('login'), {
+            'username': 'legacy',
+            'password': 'StrongPassword123'
+        })
+        self.assertRedirects(response, reverse('setup_2fa'))
+        profile.refresh_from_db()
+        self.assertTrue(profile.is_data_passphrase_set)
+
+    def test_unlock_data_requires_valid_passphrase(self):
+        user = User.objects.create_user(username='vaultuser', password='StrongPassword123')
+        profile = UserProfile.objects.create(user=user, is_2fa_enabled=True)
+        profile.generate_totp_secret()
+        profile.set_data_passphrase('VaultPassphrase123')
+
+        self.client.force_login(user)
+        session = self.client.session
+        session['is_2fa_verified'] = True
+        session['_2fa_verified'] = True
+        session.pop('_mk', None)
+        session.save()
+
+        page = self.client.get(reverse('unlock_data'))
+        self.assertEqual(page.status_code, 200)
+
+        bad = self.client.post(reverse('unlock_data'), {'data_passphrase': 'bad-pass'})
+        self.assertEqual(bad.status_code, 200)
+        self.assertContains(bad, 'Invalid data passphrase')
+
+        good = self.client.post(reverse('unlock_data'), {'data_passphrase': 'VaultPassphrase123'})
+        self.assertRedirects(good, reverse('dashboard'))
