@@ -17,7 +17,9 @@
         <a href="{% url 'upload_page' %}" class="btn btn-primary">Upload file</a>
         <a href="{% url 'records' %}" class="btn btn-ghost">Create record</a>
         <a href="{% url 'recovery_codes' %}" class="btn btn-ghost">Save recovery keys</a>
-        <a href="{% url 'setup_2fa' %}" class="btn btn-ghost">Rotate keys</a>
+        <a href="{% url 'setup_2fa' %}" class="btn btn-ghost">
+            {% if request.session.is_2fa_verified %}Rotate keys{% else %}Set up 2FA{% endif %}
+        </a>
         {% if needs_rebuild_index %}
         <button type="button" class="btn btn-ghost" disabled title="Manual index rebuild flow is not available yet.">Rebuild index</button>
         {% else %}
@@ -98,7 +100,7 @@
             <h4>Default protections</h4>
             <ul class="crypto-list">
                 <li>Password protected</li>
-                <li>2FA verified</li>
+                <li>{% if request.session.is_2fa_verified %}2FA verified{% else %}2FA pending setup{% endif %}</li>
                 <li>End-to-end encrypted</li>
                 <li>Server cannot read data</li>
             </ul>
