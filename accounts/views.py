@@ -1,22 +1,23 @@
 """
-Accounts views — Registration, Login with 2FA, TOTP setup.
+Accounts views - registration, login, Google post-auth handling, 2FA, and data unlock.
 """
 import io
 import base64
 import hashlib
-import pyotp
+
 import qrcode
-from django.core import signing
-from django.shortcuts import render, redirect
-from django.contrib.auth import login, logout, authenticate
-from django.contrib.auth.models import User
+from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.core import signing
+from django.core.cache import cache
+from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
-from django.contrib import messages
-from django.core.cache import cache
-from .models import UserProfile
+
 from drive.sse_bridge import derive_master_key
+from .models import UserProfile
 
 LOCKOUT_SECONDS = 15 * 60
 MAX_PASSWORD_FAILS_USER = 5
@@ -102,7 +103,6 @@ def _set_trusted_device_cookie(response, request, user, profile):
         token,
         max_age=TRUSTED_DEVICE_MAX_AGE_SECONDS,
         httponly=True,
-        # Only mark secure on HTTPS so local HTTP dev can still persist this cookie.
         secure=request.is_secure(),
         samesite='Lax',
         path='/',
@@ -113,9 +113,35 @@ def _clear_trusted_device_cookie(response):
     response.delete_cookie(TRUSTED_DEVICE_COOKIE, path='/')
 
 
+def _set_master_key_from_passphrase(request, profile, passphrase: str) -> bool:
+    if not profile.verify_data_passphrase(passphrase):
+        return False
+
+    profile.bootstrap_data_passphrase_from_password(passphrase)
+    secret = profile.get_totp_secret()
+    if not secret:
+        secret = profile.generate_totp_secret()
+
+    salt_bytes = bytes.fromhex(profile.salt)
+    mk = derive_master_key(passphrase, secret, salt_bytes)
+    request.session['_mk'] = base64.b64encode(mk).decode()
+    return True
+
+
+def _auth_redirect_target(profile, has_master_key: bool, used_recovery_code: bool = False):
+    if used_recovery_code:
+        return 'setup_2fa'
+    if not profile.is_2fa_enabled:
+        return 'setup_2fa'
+    if has_master_key:
+        return 'dashboard'
+    return 'unlock_data'
+
+
 def register_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
+
     if request.method == 'POST':
         username = request.POST.get('username', '').strip()
         email = request.POST.get('email', '').strip()
@@ -128,67 +154,22 @@ def register_view(request):
         if password != password2:
             messages.error(request, 'Passwords do not match.')
             return render(request, 'accounts/register.html')
-        
-        # Validators in settings.py handle length/complexity, but we catch basic length here UI-side too
         if len(password) < 10:
             messages.error(request, 'Password must be at least 10 characters.')
             return render(request, 'accounts/register.html')
-            
         if User.objects.filter(username=username).exists():
             messages.error(request, 'Username already taken.')
             return render(request, 'accounts/register.html')
 
         user = User.objects.create_user(username=username, email=email, password=password)
         profile = UserProfile.objects.create(user=user)
-        # Generate TOTP secret immediately
-        secret = profile.generate_totp_secret()
-        
-        login(request, user)
-        
-        # Derive master key and store in session (NOT password)
-        # Note: At registration, we have password and secret.
-        # Salt is already in profile.salt (auto-generated on save)
-        salt_bytes = bytes.fromhex(profile.salt)
-        mk = derive_master_key(password, secret, salt_bytes)
-        request.session['_mk'] = base64.b64encode(mk).decode()
-    if request.user.is_authenticated:
-        return redirect('dashboard')
-    if request.method == 'POST':
-        username = request.POST.get('username', '').strip()
-        email = request.POST.get('email', '').strip()
-        password = request.POST.get('password', '')
-        password2 = request.POST.get('password2', '')
+        profile.generate_totp_secret()
+        profile.set_data_passphrase(password)
 
-        if not username or not password:
-            messages.error(request, 'Username and password are required.')
-            return render(request, 'accounts/register.html')
-        if password != password2:
-            messages.error(request, 'Passwords do not match.')
-            return render(request, 'accounts/register.html')
-        
-        # Validators in settings.py handle length/complexity, but we catch basic length here UI-side too
-        if len(password) < 10:
-            messages.error(request, 'Password must be at least 10 characters.')
-            return render(request, 'accounts/register.html')
-            
-        if User.objects.filter(username=username).exists():
-            messages.error(request, 'Username already taken.')
-            return render(request, 'accounts/register.html')
-
-        user = User.objects.create_user(username=username, email=email, password=password)
-        profile = UserProfile.objects.create(user=user)
-        # Generate TOTP secret immediately
-        secret = profile.generate_totp_secret()
-        
-        login(request, user)
-        
-        # Derive master key and store in session (NOT password)
-        # Note: At registration, we have password and secret.
-        # Salt is already in profile.salt (auto-generated on save)
-        salt_bytes = bytes.fromhex(profile.salt)
-        mk = derive_master_key(password, secret, salt_bytes)
-        request.session['_mk'] = base64.b64encode(mk).decode()
-        
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+        _set_master_key_from_passphrase(request, profile, password)
+        request.session['_2fa_verified'] = False
+        request.session['is_2fa_verified'] = False
         return redirect('setup_2fa')
 
     return render(request, 'accounts/register.html')
@@ -198,7 +179,7 @@ def register_view(request):
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
-    
+
     if request.method == 'POST':
         username = request.POST.get('username', '')
         password = request.POST.get('password', '')
@@ -215,7 +196,7 @@ def login_view(request):
             _register_failure('pwd_ip', ip, MAX_PASSWORD_FAILS_IP)
             messages.error(request, 'Invalid username or password.')
             return render(request, 'accounts/login.html')
-            
+
         _clear_failures('pwd_user', user_key)
         _clear_failures('pwd_ip', ip)
 
@@ -223,50 +204,64 @@ def login_view(request):
         requires_otp = profile.is_2fa_enabled and not _has_valid_trusted_device(request, user, profile)
 
         if requires_otp:
-            # Store necessary info in session to complete login after 2FA
-            request.session['pre_2fa_uid'] = user.id
-            request.session['pre_2fa_password'] = password  # Needed for master key derivation
+            request.session['pending_2fa_uid'] = user.id
+            request.session['pre_2fa_password'] = password
             return redirect('verify_2fa')
 
-        # No 2FA required (either not enabled, or trusted device)
-        login(request, user)
-        
-        # Derive master key and store in session
-        secret = profile.get_totp_secret()
-        salt_bytes = bytes.fromhex(profile.salt)
-        mk = derive_master_key(password, secret, salt_bytes)
-        request.session['_mk'] = base64.b64encode(mk).decode()
-        
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+        has_master_key = _set_master_key_from_passphrase(request, profile, password)
         request.session['_2fa_verified'] = profile.is_2fa_enabled
         request.session['is_2fa_verified'] = profile.is_2fa_enabled
 
-        response = redirect('setup_2fa' if not profile.is_2fa_enabled else 'dashboard')
-        
-        # Set trusted device cookie if 2FA is enabled but we skipped it (trusted device flow)
+        response = redirect(_auth_redirect_target(profile, has_master_key))
+
         if profile.is_2fa_enabled:
             _set_trusted_device_cookie(response, request, user, profile)
         else:
             _clear_trusted_device_cookie(response)
-            
+
         return response
 
     return render(request, 'accounts/login.html')
 
 
+@login_required
+def post_auth_view(request):
+    """Entry-point after social login; enforces 2FA and data unlock."""
+    profile = UserProfile.objects.get_or_create(user=request.user)[0]
+
+    if not profile.get_totp_secret():
+        profile.generate_totp_secret()
+
+    if profile.is_2fa_enabled:
+        if _has_valid_trusted_device(request, request.user, profile):
+            request.session['_2fa_verified'] = True
+            request.session['is_2fa_verified'] = True
+        elif not request.session.get('is_2fa_verified'):
+            request.session['pending_2fa_uid'] = request.user.id
+            request.session.pop('pre_2fa_password', None)
+            return redirect('verify_2fa')
+    else:
+        request.session['_2fa_verified'] = False
+        request.session['is_2fa_verified'] = False
+
+    if not request.session.get('_mk'):
+        return redirect('unlock_data')
+
+    return redirect('setup_2fa' if not profile.is_2fa_enabled else 'dashboard')
+
+
 @ratelimit(key='ip', rate='10/m', method='POST', block=True)
 def verify_2fa_view(request):
-    if request.user.is_authenticated:
-        return redirect('dashboard')
-        
-    pre_uid = request.session.get('pre_2fa_uid')
+    pending_uid = request.session.get('pending_2fa_uid')
     pre_password = request.session.get('pre_2fa_password')
-    
-    if not pre_uid or not pre_password:
+
+    if not pending_uid:
         messages.error(request, 'Session expired. Please log in again.')
         return redirect('login')
-        
+
     try:
-        user = User.objects.get(id=pre_uid)
+        user = User.objects.get(id=pending_uid)
         profile = user.profile
     except User.DoesNotExist:
         messages.error(request, 'Invalid user session.')
@@ -312,23 +307,18 @@ def verify_2fa_view(request):
         _clear_failures('otp_user', otp_user_key)
         _clear_failures('otp_ip', ip)
 
-        # Successful 2FA, complete login
-        login(request, user)
-        
-        # Derive master key
-        secret = profile.get_totp_secret()
-        salt_bytes = bytes.fromhex(profile.salt)
-        mk = derive_master_key(pre_password, secret, salt_bytes)
-        request.session['_mk'] = base64.b64encode(mk).decode()
-        
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
         request.session['_2fa_verified'] = True
         request.session['is_2fa_verified'] = True
-        
-        # Clean up temp session variables
-        request.session.pop('pre_2fa_uid', None)
+
+        request.session.pop('pending_2fa_uid', None)
+
+        has_master_key = False
+        if pre_password:
+            has_master_key = _set_master_key_from_passphrase(request, profile, pre_password)
         request.session.pop('pre_2fa_password', None)
 
-        response = redirect('setup_2fa' if used_recovery_code else 'dashboard')
+        response = redirect(_auth_redirect_target(profile, has_master_key, used_recovery_code))
 
         if used_recovery_code:
             _clear_trusted_device_cookie(response)
@@ -343,13 +333,35 @@ def verify_2fa_view(request):
 
 
 @login_required
+def unlock_data_view(request):
+    profile = UserProfile.objects.get_or_create(user=request.user)[0]
+
+    if profile.is_2fa_enabled and not request.session.get('is_2fa_verified'):
+        request.session['pending_2fa_uid'] = request.user.id
+        return redirect('verify_2fa')
+
+    if request.session.get('_mk'):
+        return redirect('setup_2fa' if not profile.is_2fa_enabled else 'dashboard')
+
+    if request.method == 'POST':
+        passphrase = request.POST.get('data_passphrase', '')
+        if _set_master_key_from_passphrase(request, profile, passphrase):
+            messages.success(request, 'Data vault unlocked.')
+            return redirect('setup_2fa' if not profile.is_2fa_enabled else 'dashboard')
+        messages.error(request, 'Invalid data passphrase.')
+
+    return render(request, 'accounts/unlock_data.html', {
+        'is_2fa_enabled': profile.is_2fa_enabled,
+    })
+
+
+@login_required
 def setup_2fa_view(request):
     profile = UserProfile.objects.get_or_create(user=request.user)[0]
     secret = profile.get_totp_secret()
     is_reenroll = bool(request.session.get('_needs_authenticator_reenroll'))
 
     if not secret:
-        # Should have been generated at register, but if missing, generate now
         secret = profile.generate_totp_secret()
 
     if request.method == 'POST':
@@ -367,7 +379,7 @@ def setup_2fa_view(request):
             return redirect('setup_2fa')
         if profile.verify_totp(code):
             profile.is_2fa_enabled = True
-            profile.save()
+            profile.save(update_fields=['is_2fa_enabled'])
             request.session['_2fa_verified'] = True
             request.session['is_2fa_verified'] = True
             request.session.pop('_needs_authenticator_reenroll', None)
@@ -377,12 +389,11 @@ def setup_2fa_view(request):
             request.session['_fresh_recovery_codes'] = codes
             messages.success(request, '2FA verified. Save your new recovery codes.')
             return redirect('recovery_codes')
-        else:
-            _register_failure('otp_setup_user', otp_user_key, MAX_OTP_FAILS_USER)
-            _register_failure('otp_setup_ip', ip, MAX_OTP_FAILS_IP)
-            messages.error(request, 'Invalid code. Try again.')
 
-    # Generate QR code
+        _register_failure('otp_setup_user', otp_user_key, MAX_OTP_FAILS_USER)
+        _register_failure('otp_setup_ip', ip, MAX_OTP_FAILS_IP)
+        messages.error(request, 'Invalid code. Try again.')
+
     uri = profile.get_totp_uri()
     qr = qrcode.make(uri)
     buffer = io.BytesIO()
