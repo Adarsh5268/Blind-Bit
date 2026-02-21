@@ -24,7 +24,6 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
-    'allauth.socialaccount.providers.google',
     'accounts',
     'drive',
 ]
@@ -123,6 +122,15 @@ SOCIALACCOUNT_PROVIDERS = {
         'AUTH_PARAMS': {'access_type': 'online'},
     }
 }
+
+GOOGLE_OAUTH_ENABLED = False
+try:
+    import requests  # noqa: F401
+except Exception:
+    GOOGLE_OAUTH_ENABLED = False
+else:
+    INSTALLED_APPS.append('allauth.socialaccount.providers.google')
+    GOOGLE_OAUTH_ENABLED = bool(config('GOOGLE_CLIENT_ID', default='').strip())
 
 # --- SSE storage directory ---
 SSE_STORAGE_DIR = BASE_DIR / 'storage'
