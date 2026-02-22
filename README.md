@@ -1,3 +1,5 @@
+Live Demo: https://blindbit.pythonanywhere.com/
+
 # Secured String Matching using Symmetric Searchable Encryption (SSE)
 
 A Python implementation of a client-server **Symmetric Searchable Encryption (SSE)** system using **AES** for data encryption and secure token generation via keyed hash functions (**HMAC-SHA256**) that supports **secure keyword search on encrypted PDF and TXT files**.
@@ -197,3 +199,4 @@ Ciphertext layout:  IV (12 bytes) || Auth Tag (16 bytes) || Ciphertext
 ## License
 
 MIT License
+
