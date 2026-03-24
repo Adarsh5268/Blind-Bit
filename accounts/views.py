@@ -13,13 +13,19 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core import signing
+from django.core.mail import send_mail
 from django.core.cache import cache
 from django.shortcuts import redirect, render
+from django.urls import reverse
+from django.http import HttpResponseRedirect
 from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
+from django.contrib.auth.views import PasswordResetView
 
 from drive.sse_bridge import derive_master_key
 from client.sharing_crypto import generate_x25519_keypair, encrypt_private_key
+from crypto.double_encrypt import derive_kek, rewrap_dek
+from cryptography.exceptions import InvalidTag
 from .models import UserProfile
 
 LOCKOUT_SECONDS = 15 * 60
@@ -160,6 +166,14 @@ def _unlock_vault_with_passphrase(request, profile, passphrase: str) -> bool:
     master_key = derive_master_key(passphrase, secret, salt_bytes)
 
     request.session['_mk'] = base64.b64encode(master_key).decode()
+
+    # Derive and store KEK for double-layer encryption
+    import os as _os
+    if not profile.kek_salt:
+        profile.kek_salt = _os.urandom(16)
+        profile.save(update_fields=['kek_salt'])
+    kek_bytes = derive_kek(passphrase, bytes(profile.kek_salt))
+    request.session['kek'] = base64.b64encode(kek_bytes).decode()
     return True
 
 
@@ -227,6 +241,11 @@ def register_view(request):
         profile = UserProfile.objects.create(user=user)
         profile.generate_totp_secret()
         profile.set_data_passphrase(password)
+
+        # Initialize KEK salt for double-layer encryption
+        import os as _os
+        profile.kek_salt = _os.urandom(16)
+        profile.save(update_fields=['kek_salt'])
 
         login(request, user, backend='django.contrib.auth.backends.ModelBackend')
         request.session['_vault_passphrase'] = password
@@ -507,6 +526,7 @@ def recovery_codes_view(request):
 
 @require_POST
 def logout_view(request):
+    request.session.pop('kek', None)
     logout(request)
     return redirect('login')
 
