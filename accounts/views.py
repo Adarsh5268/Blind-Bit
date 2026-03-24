@@ -536,9 +536,14 @@ def logout_view(request):
 def change_password_view(request):
     """Change the user's password while keeping encrypted data accessible.
 
-    The DEK is re-wrapped with the new master key but is NEVER regenerated,
-    so all files encrypted with the DEK remain decryptable after the change.
+    All DEKs are re-wrapped with the new KEK inside a single atomic
+    transaction. If any rewrap fails, the entire operation rolls back
+    so no partial state is ever committed.
     """
+    import os as _os
+    from django.db import transaction
+    from drive.models import EncryptedFile
+
     profile = UserProfile.objects.get_or_create(user=request.user)[0]
 
     # Must have a live Master Key in session (i.e. vault is unlocked)
@@ -564,19 +569,39 @@ def change_password_view(request):
         messages.error(request, 'Current password is incorrect.')
         return redirect('dashboard')
 
-    # Derive current and new master keys
-    totp_secret = profile.get_totp_secret()
-    salt_bytes = bytes.fromhex(profile.salt)
-    old_master_key = derive_master_key(current_password, totp_secret, salt_bytes)
-    new_master_key = derive_master_key(new_password, totp_secret, salt_bytes)
+    # Derive old and new KEKs
+    old_kek = derive_kek(current_password, bytes(profile.kek_salt))
+    new_salt = _os.urandom(16)
+    new_kek = derive_kek(new_password, new_salt)
 
-    # Note: With DEK layer removed, changing password means encryption keys change.
-    # Existing data encrypted with old password will be unreadable unless re-encrypted.
-    del old_master_key, new_master_key
+    # Get all double-encrypted files belonging to this user
+    user_files = EncryptedFile.objects.filter(owner=request.user, encrypted_dek__gt=b'')
 
-    # Update the Django auth password and keep the session alive.
-    request.user.set_password(new_password)
-    request.user.save()
+    try:
+        with transaction.atomic():
+            for f in user_files:
+                record = {
+                    "ciphertext":    bytes(f.encrypted_data),
+                    "iv_aes":        bytes(f.iv_aes),
+                    "nonce_cc":      bytes(f.nonce_cc),
+                    "encrypted_dek": bytes(f.encrypted_dek),
+                    "kek_iv":        bytes(f.kek_iv),
+                }
+                updated = rewrap_dek(record, old_kek, new_kek)
+                f.encrypted_dek = updated["encrypted_dek"]
+                f.kek_iv = updated["kek_iv"]
+                f.save(update_fields=["encrypted_dek", "kek_iv"])
+
+            # Only after ALL rewraps succeed:
+            request.user.kek_salt = new_salt  # via profile
+            profile.kek_salt = new_salt
+            profile.save(update_fields=['kek_salt'])
+            request.user.set_password(new_password)
+            request.user.save()
+
+    except InvalidTag:
+        messages.error(request, 'Password change failed. Please try again.')
+        return redirect('dashboard')
 
     # Update data-passphrase hash to match the new password.
     profile.set_data_passphrase(new_password)
@@ -585,8 +610,14 @@ def change_password_view(request):
     from django.contrib.auth import update_session_auth_hash
     update_session_auth_hash(request, request.user)
 
-    # Master key in session must be updated to the new one.
-    request.session['_mk'] = base64.b64encode(new_master_key).decode() if 'new_master_key' in locals() else base64.b64encode(derive_master_key(new_password, totp_secret, salt_bytes)).decode()
+    # Update master key in session
+    totp_secret = profile.get_totp_secret()
+    salt_bytes = bytes.fromhex(profile.salt)
+    new_master_key = derive_master_key(new_password, totp_secret, salt_bytes)
+    request.session['_mk'] = base64.b64encode(new_master_key).decode()
 
-    messages.success(request, 'Password changed successfully. Note: Old data is now unreadable with new key.')
+    # Refresh KEK in session
+    request.session['kek'] = base64.b64encode(new_kek).decode()
+
+    messages.success(request, 'Password changed successfully.')
     return redirect('dashboard')
