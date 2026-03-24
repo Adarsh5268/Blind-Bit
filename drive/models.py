@@ -18,6 +18,12 @@ class EncryptedFile(models.Model):
     file_key_iv = models.BinaryField(blank=True, null=True)
     file_key_tag = models.BinaryField(blank=True, null=True)
 
+    # Double-layer encryption fields (AES-GCM inner + ChaCha20-Poly1305 outer)
+    encrypted_dek = models.BinaryField(default=b'')
+    kek_iv = models.BinaryField(default=b'')
+    iv_aes = models.BinaryField(default=b'')
+    nonce_cc = models.BinaryField(default=b'')
+
     class Meta:
         ordering = ['-uploaded_at']
 
@@ -27,6 +33,11 @@ class EncryptedFile(models.Model):
     @property
     def has_per_file_key(self):
         return bool(self.encrypted_file_key)
+
+    @property
+    def has_double_encryption(self):
+        """True when the file uses double-layer (AES-GCM + ChaCha20) encryption."""
+        return bool(self.encrypted_dek)
 
 
 class FileIndex(models.Model):
