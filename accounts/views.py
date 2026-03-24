@@ -36,6 +36,8 @@ MAX_OTP_FAILS_IP = 20
 TRUSTED_DEVICE_COOKIE = 'trusted_device_2fa'
 TRUSTED_DEVICE_SALT = 'accounts.trusted_device_2fa'
 TRUSTED_DEVICE_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
+TWO_FA_EMAIL_RECOVERY_SALT = 'accounts.2fa.email.recovery'
+TWO_FA_EMAIL_RECOVERY_TTL_SECONDS = 15 * 60
 
 
 def _auth_context(**kwargs) -> dict:
@@ -490,6 +492,99 @@ def verify_2fa_view(request):
         return response
 
     return render(request, 'accounts/verify_2fa.html', {'hide_sidebar': True})
+
+
+@require_POST
+@ratelimit(key='ip', rate='5/m', method='POST', block=True)
+def two_factor_recovery_email_request_view(request):
+    pending_uid = request.session.get('pending_2fa_uid')
+    if not pending_uid:
+        messages.error(request, 'Session expired. Please log in again.')
+        return redirect('login')
+
+    try:
+        user = User.objects.get(id=pending_uid)
+    except User.DoesNotExist:
+        messages.error(request, 'Invalid user session. Please log in again.')
+        return redirect('login')
+
+    verified_email = _get_verified_email(user)
+    if not verified_email:
+        messages.error(
+            request,
+            'No verified email found for this account. Please contact support.',
+        )
+        return redirect('verify_2fa')
+
+    token = signing.dumps(
+        {'uid': user.id, 'pw': user.password},
+        salt=TWO_FA_EMAIL_RECOVERY_SALT,
+        compress=True,
+    )
+    link = request.build_absolute_uri(
+        reverse('two_factor_email_recovery', args=[token])
+    )
+
+    subject = 'BlindBit 2FA recovery link'
+    body = (
+        "We received a request to recover access to your account.\n\n"
+        f"Use this link to verify your email and reset 2FA:\n{link}\n\n"
+        f"This link expires in {TWO_FA_EMAIL_RECOVERY_TTL_SECONDS // 60} minutes. "
+        "If you did not request this, you can ignore this email."
+    )
+    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', None) or 'no-reply@blindbit.local'
+    send_mail(subject, body, from_email, [verified_email], fail_silently=True)
+
+    messages.success(request, 'We sent a recovery link to your verified email.')
+    return redirect('verify_2fa')
+
+
+def two_factor_recovery_email_confirm_view(request, token):
+    try:
+        payload = signing.loads(
+            token,
+            salt=TWO_FA_EMAIL_RECOVERY_SALT,
+            max_age=TWO_FA_EMAIL_RECOVERY_TTL_SECONDS,
+        )
+    except (signing.BadSignature, signing.SignatureExpired):
+        messages.error(request, 'Recovery link is invalid or expired. Please try again.')
+        return redirect('login')
+
+    uid = payload.get('uid')
+    pw = payload.get('pw')
+    if not uid or not pw:
+        messages.error(request, 'Recovery link is invalid. Please log in again.')
+        return redirect('login')
+
+    try:
+        user = User.objects.get(id=uid)
+    except User.DoesNotExist:
+        messages.error(request, 'Recovery link is invalid. Please log in again.')
+        return redirect('login')
+
+    if not user.is_active or user.password != pw:
+        messages.error(request, 'Recovery link is no longer valid. Please log in again.')
+        return redirect('login')
+
+    profile = UserProfile.objects.get_or_create(user=user)[0]
+    login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+    request.session['_2fa_verified'] = True
+    request.session['is_2fa_verified'] = True
+    request.session['_needs_authenticator_reenroll'] = True
+    request.session.pop('pending_2fa_uid', None)
+
+    pre_password = request.session.get('pre_2fa_password')
+    if pre_password:
+        if _unlock_vault_with_passphrase(request, profile, pre_password):
+            request.session['_vault_passphrase'] = pre_password
+    elif _auto_unlock_for_social(request, user, profile):
+        pass
+    request.session.pop('pre_2fa_password', None)
+
+    response = redirect('setup_2fa')
+    _clear_trusted_device_cookie(response)
+    messages.success(request, 'Email confirmed. Set up a new authenticator now.')
+    return response
 
 
 @login_required

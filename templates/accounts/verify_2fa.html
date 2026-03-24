@@ -62,6 +62,12 @@
             {% csrf_token %}
             <button type="submit" class="btn btn-ghost btn-full">Logout</button>
         </form>
+        <form method="post" action="{% url 'two_factor_email_recovery_request' %}" style="margin-top:10px;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-ghost btn-full">
+                Email a recovery link
+            </button>
+        </form>
     </div>
 </div>
 {% endblock %}
