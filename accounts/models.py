@@ -29,6 +29,9 @@ class UserProfile(models.Model):
     data_passphrase_hash = models.TextField(blank=True, default='')
     is_data_passphrase_set = models.BooleanField(default=False)
 
+    # KEK (Key Encryption Key) salt for Argon2id derivation
+    kek_salt = models.BinaryField(default=b'', blank=True)
+
     # X25519 asymmetric keypair for file sharing
     public_key = models.BinaryField(blank=True, null=True)
     encrypted_private_key = models.BinaryField(blank=True, null=True)
