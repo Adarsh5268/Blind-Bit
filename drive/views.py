@@ -35,6 +35,8 @@ from client.sharing_crypto import (
     wrap_file_key, unwrap_file_key,
     encrypt_private_key, decrypt_private_key,
 )
+from crypto.double_encrypt import double_encrypt, double_decrypt, rewrap_dek
+from cryptography.exceptions import InvalidTag
 
 logger = logging.getLogger(__name__)
 
@@ -259,6 +261,11 @@ def upload_file(request):
             return JsonResponse({'error': 'Vault key is unavailable for this session. Please sign in again.'}, status=403)
         return JsonResponse({'error': '2FA required'}, status=403)
 
+    kek_b64 = request.session.get('kek')
+    if not kek_b64:
+        return JsonResponse({'error': 'Session expired. Please log in again.'}, status=403)
+    kek = base64.b64decode(kek_b64)
+
     uploaded = request.FILES.get('file')
     if not uploaded:
         return JsonResponse({'error': 'No file selected'}, status=400)
@@ -305,14 +312,19 @@ def upload_file(request):
         if not keywords:
             return JsonResponse({'error': 'No searchable content found'}, status=400)
 
-        # Generate per-file AES key and encrypt file with it
-        logger.info("Encrypting file data with per-file key...")
-        per_file_key = generate_file_key()
-        file_id, enc_data, enc_time = encrypt_file_data(tmp_path, per_file_key)
-        logger.info(f"File encrypted: {file_id}, time: {enc_time}s")
+        # Read plaintext for double encryption
+        with open(tmp_path, 'rb') as f:
+            plaintext_bytes = f.read()
 
-        # Wrap the per-file key for owner storage using file_encryption_key
-        enc_fk, fk_iv, fk_tag = encrypt_file_key_for_owner(per_file_key, keys['file_encryption_key'])
+        import uuid as _uuid
+        file_id = str(_uuid.uuid4())
+
+        # Double-layer encryption: AES-GCM (inner) + ChaCha20-Poly1305 (outer)
+        logger.info("Encrypting file data with double-layer encryption...")
+        enc_start = time.perf_counter()
+        result = double_encrypt(plaintext_bytes, kek)
+        enc_time = time.perf_counter() - enc_start
+        logger.info(f"File encrypted: {file_id}, time: {enc_time}s")
 
         # Build index (still uses owner's HMAC keys)
         logger.info("Building encrypted index...")
@@ -323,13 +335,14 @@ def upload_file(request):
         )
         logger.info(f"Index built: {len(index_entries)} tokens, time: {idx_time}s")
 
-        # Store in DB with per-file key metadata
+        # Store in DB with double-encryption fields
         ef = EncryptedFile.objects.create(
             file_id=file_id, filename=uploaded.name,
-            encrypted_data=enc_data, owner=request.user,
-            encrypted_file_key=enc_fk,
-            file_key_iv=fk_iv,
-            file_key_tag=fk_tag,
+            encrypted_data=result["ciphertext"], owner=request.user,
+            iv_aes=result["iv_aes"],
+            nonce_cc=result["nonce_cc"],
+            encrypted_dek=result["encrypted_dek"],
+            kek_iv=result["kek_iv"],
         )
         
         logger.info(f"Saving {len(index_entries)} tokens to database...")
@@ -357,7 +370,7 @@ def upload_file(request):
             'encrypt_time': round(enc_time, 4),
             'index_time': round(idx_time, 4),
             'total_time': round(total_time, 4),
-            'size': len(enc_data),
+            'size': len(result["ciphertext"]),
         })
     finally:
         os.unlink(tmp_path)
@@ -604,7 +617,21 @@ def search_api(request):
             # Decrypt preview
             try:
                 ef = EncryptedFile.objects.get(file_id=fid)
-                if ef.has_per_file_key:
+                if ef.has_double_encryption:
+                    kek_b64 = request.session.get('kek')
+                    if kek_b64:
+                        kek = base64.b64decode(kek_b64)
+                        record = {
+                            "ciphertext":    bytes(ef.encrypted_data),
+                            "iv_aes":        bytes(ef.iv_aes),
+                            "nonce_cc":      bytes(ef.nonce_cc),
+                            "encrypted_dek": bytes(ef.encrypted_dek),
+                            "kek_iv":        bytes(ef.kek_iv),
+                        }
+                        plain = double_decrypt(record, kek)
+                    else:
+                        raise ValueError("KEK missing")
+                elif ef.has_per_file_key:
                     file_key = decrypt_file_key_for_owner(
                         bytes(ef.encrypted_file_key),
                         bytes(ef.file_key_iv),
@@ -783,29 +810,72 @@ def download_file(request, file_id):
     if share:
         ef = share.file
         try:
-            profile = request.user.profile
-            priv_key = decrypt_private_key(
-                bytes(profile.encrypted_private_key),
-                bytes(profile.private_key_iv),
-                bytes(profile.private_key_tag),
-                mk,
-            )
-            file_key = unwrap_file_key(
-                bytes(share.wrapped_key),
-                bytes(share.ephemeral_public),
-                bytes(share.wrapped_iv),
-                bytes(share.wrapped_tag),
-                priv_key,
-            )
-            plaintext = decrypt_file_data(bytes(ef.encrypted_data), file_id, file_key)
-        except Exception as e:
-            messages.error(request, f'Decryption of shared file failed: {e}')
+            if ef.has_double_encryption:
+                # New double-encryption share: unwrap DEK from share record
+                profile = request.user.profile
+                priv_key = decrypt_private_key(
+                    bytes(profile.encrypted_private_key),
+                    bytes(profile.private_key_iv),
+                    bytes(profile.private_key_tag),
+                    mk,
+                )
+                # The share's wrapped_key is the DEK wrapped with recipient's X25519
+                dek = unwrap_file_key(
+                    bytes(share.wrapped_key),
+                    bytes(share.ephemeral_public),
+                    bytes(share.wrapped_iv),
+                    bytes(share.wrapped_tag),
+                    priv_key,
+                )
+                # Build a record for double_decrypt using the unwrapped DEK directly
+                from crypto.double_encrypt import split_dek as _split_dek
+                from cryptography.hazmat.primitives.ciphers.aead import AESGCM as _AESGCM, ChaCha20Poly1305 as _CC
+                dek_a, dek_b = _split_dek(dek)
+                inner = _CC(dek_b).decrypt(bytes(ef.nonce_cc), bytes(ef.encrypted_data), None)
+                plaintext = _AESGCM(dek_a).decrypt(bytes(ef.iv_aes), inner, None)
+            else:
+                # Legacy share: unwrap per-file key via X25519
+                profile = request.user.profile
+                priv_key = decrypt_private_key(
+                    bytes(profile.encrypted_private_key),
+                    bytes(profile.private_key_iv),
+                    bytes(profile.private_key_tag),
+                    mk,
+                )
+                file_key = unwrap_file_key(
+                    bytes(share.wrapped_key),
+                    bytes(share.ephemeral_public),
+                    bytes(share.wrapped_iv),
+                    bytes(share.wrapped_tag),
+                    priv_key,
+                )
+                plaintext = decrypt_file_data(bytes(ef.encrypted_data), file_id, file_key)
+        except InvalidTag:
+            messages.error(request, 'Decryption failed.')
+            return redirect('shared_with_me')
+        except Exception:
+            messages.error(request, 'Decryption failed.')
             return redirect('shared_with_me')
     else:
         ef = get_object_or_404(EncryptedFile, file_id=file_id, owner=request.user)
         try:
-            if ef.has_per_file_key:
-                # New-style: unwrap per-file key, then decrypt
+            if ef.has_double_encryption:
+                # New double-layer encrypted file
+                kek_b64 = request.session.get('kek')
+                if not kek_b64:
+                    messages.error(request, 'Session expired. Please log in again.')
+                    return redirect('files')
+                kek = base64.b64decode(kek_b64)
+                record = {
+                    "ciphertext":    bytes(ef.encrypted_data),
+                    "iv_aes":        bytes(ef.iv_aes),
+                    "nonce_cc":      bytes(ef.nonce_cc),
+                    "encrypted_dek": bytes(ef.encrypted_dek),
+                    "kek_iv":        bytes(ef.kek_iv),
+                }
+                plaintext = double_decrypt(record, kek)
+            elif ef.has_per_file_key:
+                # Mid-gen: unwrap per-file key, then decrypt
                 file_key = decrypt_file_key_for_owner(
                     bytes(ef.encrypted_file_key),
                     bytes(ef.file_key_iv),
@@ -816,8 +886,11 @@ def download_file(request, file_id):
             else:
                 # Legacy: decrypt with master-derived key directly
                 plaintext = decrypt_file_data(bytes(ef.encrypted_data), file_id, keys['file_encryption_key'])
-        except Exception as e:
-            messages.error(request, f'Decryption failed: {e}')
+        except InvalidTag:
+            messages.error(request, 'Decryption failed.')
+            return redirect('files')
+        except Exception:
+            messages.error(request, 'Decryption failed.')
             return redirect('files')
 
     response = HttpResponse(plaintext, content_type='application/octet-stream')
@@ -1016,7 +1089,7 @@ def share_file(request):
     if not ef:
         return JsonResponse({'error': 'File not found or not owned by you'}, status=404)
 
-    if not ef.has_per_file_key:
+    if not ef.has_per_file_key and not ef.has_double_encryption:
         return JsonResponse({
             'error': 'This file uses legacy encryption and cannot be shared. Please re-upload it.'
         }, status=400)
@@ -1035,22 +1108,31 @@ def share_file(request):
     if FileShare.objects.filter(file=ef, shared_with=target_user).exists():
         return JsonResponse({'error': 'File is already shared with this user'}, status=409)
 
-    # Unwrap the per-file key for the owner
+    # Get the shareable key (DEK for double-encrypted, per-file key for legacy)
     try:
-        file_key = decrypt_file_key_for_owner(
-            bytes(ef.encrypted_file_key),
-            bytes(ef.file_key_iv),
-            bytes(ef.file_key_tag),
-            keys['file_encryption_key'],
-        )
-    except Exception as e:
-        logger.error(f"Failed to unwrap file key for {file_id}: {type(e).__name__}: {e}")
-        return JsonResponse({'error': f'Failed to unwrap file key: {type(e).__name__}'}, status=500)
+        if ef.has_double_encryption:
+            # Unwrap the DEK using owner's KEK
+            kek_b64 = request.session.get('kek')
+            if not kek_b64:
+                return JsonResponse({'error': 'Session expired. Please log in again.'}, status=403)
+            kek = base64.b64decode(kek_b64)
+            from cryptography.hazmat.primitives.ciphers.aead import AESGCM as _AESGCM
+            shareable_key = _AESGCM(kek).decrypt(bytes(ef.kek_iv), bytes(ef.encrypted_dek), None)
+        else:
+            # Legacy: unwrap per-file key
+            shareable_key = decrypt_file_key_for_owner(
+                bytes(ef.encrypted_file_key),
+                bytes(ef.file_key_iv),
+                bytes(ef.file_key_tag),
+                keys['file_encryption_key'],
+            )
+    except Exception:
+        return JsonResponse({'error': 'Failed to unwrap file key.'}, status=500)
 
-    # Wrap the file key for the recipient
+    # Wrap the key for the recipient via X25519
     try:
         wrapped, ephemeral_pub, iv, tag = wrap_file_key(
-            file_key, bytes(target_profile.public_key)
+            shareable_key, bytes(target_profile.public_key)
         )
     except Exception:
         return JsonResponse({'error': 'Failed to wrap file key for recipient'}, status=500)
