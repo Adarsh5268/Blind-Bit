@@ -287,6 +287,21 @@ def login_view(request):
 
         user = authenticate(request, username=username, password=password)
         if user is None:
+            email_candidate = None
+            if '@' in username:
+                email_candidate = username
+            else:
+                # If username auth failed, also try email lookup in case the user entered email.
+                email_candidate = username
+
+            if email_candidate:
+                matches = list(User.objects.filter(email__iexact=email_candidate).order_by('id')[:2])
+                if len(matches) == 1:
+                    email_user = matches[0]
+                    user = authenticate(request, username=email_user.username, password=password)
+                    if user:
+                        user_key = user.username.lower().strip()
+        if user is None:
             _register_failure('pwd_user', user_key, MAX_PASSWORD_FAILS_USER)
             _register_failure('pwd_ip', ip, MAX_PASSWORD_FAILS_IP)
             messages.error(request, 'Invalid username or password.')
