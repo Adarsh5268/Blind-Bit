@@ -647,11 +647,21 @@ h3 {
     padding-top: 6px;
 }
 
-.form-toggle a {
-    color: var(--text-dim);
-    text-decoration: underline;
-    font-size: 13px;
-}
+  .form-toggle a {
+      color: var(--text-dim);
+      text-decoration: underline;
+      font-size: 13px;
+  }
+
+  .forgot-link {
+      font-size: 12px;
+      color: var(--text-dim);
+      text-decoration: none;
+  }
+
+  .forgot-link:hover {
+      text-decoration: underline;
+  }
 
 .form-toggle a:hover {
     color: var(--text);

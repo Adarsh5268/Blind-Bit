@@ -97,6 +97,13 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# --- Email (dev default prints to console) ---
+EMAIL_BACKEND = config(
+    'DJANGO_EMAIL_BACKEND',
+    default='django.core.mail.backends.console.EmailBackend',
+)
+DEFAULT_FROM_EMAIL = config('DJANGO_DEFAULT_FROM_EMAIL', default='no-reply@blindbit.local')
+
 # --- Auth Redirects ---
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/accounts/post-auth/'

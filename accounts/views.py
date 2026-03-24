@@ -144,13 +144,51 @@ def _clear_trusted_device_cookie(response):
     response.delete_cookie(TRUSTED_DEVICE_COOKIE, path='/')
 
 
+def _get_verified_email(user) -> str:
+    try:
+        from allauth.account.models import EmailAddress
+    except Exception:
+        return ''
+
+    record = (
+        EmailAddress.objects.filter(user=user, verified=True)
+        .order_by('primary', 'email')
+        .first()
+    )
+    if record:
+        return record.email
+    return ''
+
+
+class BlindBitPasswordResetView(PasswordResetView):
+    template_name = 'registration/password_reset_form.html'
+    email_template_name = 'registration/password_reset_email.html'
+    subject_template_name = 'registration/password_reset_subject.txt'
+    success_url = '/accounts/password/reset/done/'
+
+    def form_valid(self, form):
+        opts = {
+            'use_https': self.request.is_secure(),
+            'request': self.request,
+            'from_email': self.from_email,
+            'email_template_name': self.email_template_name,
+            'subject_template_name': self.subject_template_name,
+            'html_email_template_name': self.html_email_template_name,
+            'extra_email_context': self.extra_email_context,
+            'domain_override': self.request.get_host(),
+        }
+        form.save(**opts)
+        return HttpResponseRedirect(self.get_success_url())
+
+
 def _unlock_vault_with_passphrase(request, profile, passphrase: str) -> bool:
-    """Verify passphrase, derive master key, and store it in session.
+    """Verify passphrase, derive master key + KEK, and store both in session.
 
     Flow:
       1. Verify the data passphrase (fallback: Django password).
       2. Derive master_key = KDF(passphrase + TOTP_secret + salt).
       3. Store master_key in session['_mk'].
+      4. Derive KEK from passphrase + kek_salt (Argon2id) and store in session['kek'].
 
     Returns True on success, False if the passphrase is wrong.
     """
